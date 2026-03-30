@@ -1,0 +1,31 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: oil_warehouse_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: oil_warehouse
+      POSTGRES_USER: arash
+      POSTGRES_PASSWORD: warehouse_dev_2026
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - oil_warehouse_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arash -d oil_warehouse"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - oil_warehouse_net
+
+volumes:
+  oil_warehouse_data:
+    name: oil_warehouse_data
+
+networks:
+  oil_warehouse_net:
+    name: oil_warehouse_net

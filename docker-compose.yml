@@ -1,0 +1,120 @@
+services:
+
+  # ---------------------------------------------------------------------------
+  # PostgreSQL 16 data warehouse
+  # Mapped to host port 5433 to avoid conflicting with the standalone
+  # oil_warehouse_db container (which uses 5432).
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:16
+    container_name: oil_warehouse_db_compose
+    environment:
+      POSTGRES_DB: oil_warehouse
+      POSTGRES_USER: arash
+      POSTGRES_PASSWORD: warehouse_dev_2026
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U arash -d oil_warehouse"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 10s
+    networks:
+      - oil-network
+
+  # ---------------------------------------------------------------------------
+  # Ingestor — fetches oil prices from Yahoo Finance, loads into PostgreSQL.
+  # Run-once batch job; exits with code 0 on success.
+  # ---------------------------------------------------------------------------
+  ingestor:
+    build:
+      context: ./services/ingestor
+      dockerfile: Dockerfile
+    container_name: oil_ingestor
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: oil_warehouse
+      DB_USER: arash
+      DB_PASSWORD: warehouse_dev_2026
+      LOG_LEVEL: INFO
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - oil-network
+
+  # ---------------------------------------------------------------------------
+  # Lakehouse — reads PostgreSQL, writes Bronze/Silver/Gold Parquet files.
+  # Run-once batch job; exits with code 0 on success.
+  # Output written to the named volume "lakehouse-data" at /app/data.
+  # ---------------------------------------------------------------------------
+  lakehouse:
+    build:
+      context: ./services/lakehouse
+      dockerfile: Dockerfile
+    container_name: oil_lakehouse
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: oil_warehouse
+      DB_USER: arash
+      DB_PASSWORD: warehouse_dev_2026
+      DATA_DIR: /app/data
+      LOG_LEVEL: INFO
+    volumes:
+      - lakehouse-data:/app/data
+    depends_on:
+      ingestor:
+        condition: service_completed_successfully
+    networks:
+      - oil-network
+
+  # ---------------------------------------------------------------------------
+  # API — FastAPI service serving data from PostgreSQL and DuckDB/Parquet.
+  # Long-running; stays up indefinitely on port 8000.
+  #
+  # Volume mount strategy for the lakehouse data:
+  #   The lakehouse writes serving/ under DATA_DIR=/app/data, so the volume
+  #   root corresponds to "data/". We mount it at /opt/lakehouse/data so that
+  #   OIL_API_LAKEHOUSE_BASE_PATH=/opt/lakehouse resolves correctly:
+  #     {lakehouse_base_path}/data/serving/ = /opt/lakehouse/data/serving/ ✓
+  # ---------------------------------------------------------------------------
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: oil_api
+    environment:
+      OIL_API_PG_HOST: postgres
+      OIL_API_PG_PORT: 5432
+      OIL_API_PG_DATABASE: oil_warehouse
+      OIL_API_PG_USER: arash
+      OIL_API_PG_PASSWORD: warehouse_dev_2026
+      OIL_API_LAKEHOUSE_BASE_PATH: /opt/lakehouse
+    ports:
+      - "8000:8000"
+    volumes:
+      - lakehouse-data:/opt/lakehouse/data:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      lakehouse:
+        condition: service_completed_successfully
+    networks:
+      - oil-network
+
+volumes:
+  pgdata:
+    name: oil_pgdata
+  lakehouse-data:
+    name: oil_lakehouse_data
+
+networks:
+  oil-network:
+    driver: bridge
+    name: oil-network
