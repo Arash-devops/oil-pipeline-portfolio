@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "oil-pipeline.postgresHost" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oil-pipeline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: database
+spec:
+  type: {{ .Values.postgres.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "oil-pipeline.name" . }}-postgres
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: postgres
+      port: {{ .Values.postgres.service.port }}
+      targetPort: 5432
+      protocol: TCP

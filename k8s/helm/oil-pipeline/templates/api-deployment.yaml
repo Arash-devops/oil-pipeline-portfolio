@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "oil-pipeline.fullname" . }}-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oil-pipeline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  replicas: {{ .Values.api.replicaCount }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "oil-pipeline.name" . }}-api
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "oil-pipeline.name" . }}-api
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: backend
+        app.kubernetes.io/part-of: oil-pipeline
+    spec:
+      initContainers:
+        - name: wait-for-postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL to be ready..."
+              until pg_isready -h {{ include "oil-pipeline.postgresHost" . }} \
+                    -U {{ .Values.postgres.credentials.username }} \
+                    -d {{ .Values.postgres.credentials.database }}; do
+                echo "PostgreSQL not ready — retrying in 2s"
+                sleep 2
+              done
+              echo "PostgreSQL is ready."
+      containers:
+        - name: api
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          ports:
+            - containerPort: {{ .Values.api.service.targetPort }}
+          env:
+            - name: OIL_API_PG_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: OIL_API_PG_HOST
+            - name: OIL_API_PG_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: OIL_API_PG_PORT
+            - name: OIL_API_PG_DATABASE
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: OIL_API_PG_DATABASE
+            - name: OIL_API_PG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-secret
+                  key: OIL_API_PG_USER
+            - name: OIL_API_PG_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-secret
+                  key: OIL_API_PG_PASSWORD
+            - name: OIL_API_LAKEHOUSE_BASE_PATH
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: OIL_API_LAKEHOUSE_BASE_PATH
+          volumeMounts:
+            - name: lakehouse-data
+              mountPath: /opt/lakehouse/data
+              readOnly: true
+          resources:
+            {{- toYaml .Values.api.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: {{ .Values.api.service.targetPort }}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /api/v1/health
+              port: {{ .Values.api.service.targetPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 3
+      volumes:
+        - name: lakehouse-data
+          persistentVolumeClaim:
+            claimName: {{ include "oil-pipeline.fullname" . }}-lakehouse-data
+            readOnly: true

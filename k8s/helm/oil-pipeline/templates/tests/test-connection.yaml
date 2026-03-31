@@ -1,0 +1,28 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "oil-pipeline.fullname" . }}-test-connection
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oil-pipeline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: test
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+    - name: test-api-health
+      image: busybox:1.36
+      command:
+        - sh
+        - -c
+        - |
+          echo "Testing API health endpoint..."
+          RESPONSE=$(wget -q -O - \
+            http://{{ include "oil-pipeline.fullname" . }}-api:{{ .Values.api.service.port }}/api/v1/health \
+            2>&1)
+          echo "Response: $RESPONSE"
+          echo "$RESPONSE" | grep -q '"status"' && \
+            echo "Test PASSED: health endpoint returned a response" && exit 0 || \
+            (echo "Test FAILED: unexpected response" && exit 1)

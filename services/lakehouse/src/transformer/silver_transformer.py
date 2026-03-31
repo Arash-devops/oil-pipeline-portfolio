@@ -8,8 +8,7 @@ and writes curated Parquet files alongside a data quality report.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import Any
 
 import duckdb
@@ -25,36 +24,40 @@ logger = logging.getLogger(__name__)
 _PRICE_FLOOR = 0.01
 _PRICE_CEILING = 500.0
 
-_CURATED_SCHEMA = pa.schema([
-    pa.field("price_key",           pa.int64()),
-    pa.field("symbol",              pa.string()),
-    pa.field("commodity_name",      pa.string()),
-    pa.field("commodity_type",      pa.string()),
-    pa.field("trade_date",          pa.date32()),
-    pa.field("year",                pa.int32()),
-    pa.field("month",               pa.int32()),
-    pa.field("day",                 pa.int32()),
-    pa.field("quarter",             pa.int32()),
-    pa.field("is_trading_day",      pa.bool_()),
-    pa.field("open",                pa.float64()),
-    pa.field("high",                pa.float64()),
-    pa.field("low",                 pa.float64()),
-    pa.field("close",               pa.float64()),
-    pa.field("adj_close",           pa.float64()),
-    pa.field("volume",              pa.int64()),
-    pa.field("daily_change",        pa.float64()),
-    pa.field("daily_change_pct",    pa.float64()),
-    pa.field("daily_return_pct",    pa.float64()),
-    pa.field("source",              pa.string()),
-    pa.field("quality_flag",        pa.string()),
-])
+_CURATED_SCHEMA = pa.schema(
+    [
+        pa.field("price_key", pa.int64()),
+        pa.field("symbol", pa.string()),
+        pa.field("commodity_name", pa.string()),
+        pa.field("commodity_type", pa.string()),
+        pa.field("trade_date", pa.date32()),
+        pa.field("year", pa.int32()),
+        pa.field("month", pa.int32()),
+        pa.field("day", pa.int32()),
+        pa.field("quarter", pa.int32()),
+        pa.field("is_trading_day", pa.bool_()),
+        pa.field("open", pa.float64()),
+        pa.field("high", pa.float64()),
+        pa.field("low", pa.float64()),
+        pa.field("close", pa.float64()),
+        pa.field("adj_close", pa.float64()),
+        pa.field("volume", pa.int64()),
+        pa.field("daily_change", pa.float64()),
+        pa.field("daily_change_pct", pa.float64()),
+        pa.field("daily_return_pct", pa.float64()),
+        pa.field("source", pa.string()),
+        pa.field("quality_flag", pa.string()),
+    ]
+)
 
-_QUALITY_SCHEMA = pa.schema([
-    pa.field("symbol",          pa.string()),
-    pa.field("trade_date",      pa.date32()),
-    pa.field("quality_flag",    pa.string()),
-    pa.field("reason",          pa.string()),
-])
+_QUALITY_SCHEMA = pa.schema(
+    [
+        pa.field("symbol", pa.string()),
+        pa.field("trade_date", pa.date32()),
+        pa.field("quality_flag", pa.string()),
+        pa.field("reason", pa.string()),
+    ]
+)
 
 
 class SilverTransformer:
@@ -77,7 +80,7 @@ class SilverTransformer:
             Stats dict with: rows_in, rows_out, rows_filtered, quality_score,
             partitions_written, duration_seconds.
         """
-        t0 = datetime.now(tz=timezone.utc)
+        t0 = datetime.now(tz=UTC)
 
         raw_glob = str(self._config.raw_path / "**" / "*.parquet")
         df = self._read_raw(raw_glob)
@@ -102,7 +105,7 @@ class SilverTransformer:
         self._write_quality_report(quality_df)
 
         quality_score = round(rows_out / rows_in * 100, 2) if rows_in > 0 else 0.0
-        duration = (datetime.now(tz=timezone.utc) - t0).total_seconds()
+        duration = (datetime.now(tz=UTC) - t0).total_seconds()
 
         stats = {
             "rows_in": rows_in,
@@ -130,9 +133,7 @@ class SilverTransformer:
         """
         try:
             con = duckdb.connect(":memory:")
-            df = con.execute(
-                f"SELECT * FROM read_parquet('{glob_pattern}', hive_partitioning=true)"
-            ).df()
+            df = con.execute(f"SELECT * FROM read_parquet('{glob_pattern}', hive_partitioning=true)").df()
             con.close()
             logger.info("Read %d rows from bronze layer", len(df))
             return df
@@ -140,9 +141,7 @@ class SilverTransformer:
             logger.warning("Could not read raw Parquet files: %s", exc)
             return pd.DataFrame()
 
-    def _apply_transformations(
-        self, df: pd.DataFrame
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def _apply_transformations(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Apply all quality filters and compute derived columns.
 
         Filters:
@@ -170,54 +169,53 @@ class SilverTransformer:
         # --- Filter: null close ---
         null_mask = df["close"].isna()
         for _, row in df[null_mask].iterrows():
-            quality_records.append({
-                "symbol": row.get("symbol", ""),
-                "trade_date": row.get("trade_date"),
-                "quality_flag": "filtered",
-                "reason": "null close price",
-            })
+            quality_records.append(
+                {
+                    "symbol": row.get("symbol", ""),
+                    "trade_date": row.get("trade_date"),
+                    "quality_flag": "filtered",
+                    "reason": "null close price",
+                }
+            )
         df = df[~null_mask].copy()
 
         # --- Filter: non-positive close ---
         neg_mask = df["close"] <= 0
         for _, row in df[neg_mask].iterrows():
-            quality_records.append({
-                "symbol": row.get("symbol", ""),
-                "trade_date": row.get("trade_date"),
-                "quality_flag": "filtered",
-                "reason": f"non-positive close price: {row.get('close')}",
-            })
+            quality_records.append(
+                {
+                    "symbol": row.get("symbol", ""),
+                    "trade_date": row.get("trade_date"),
+                    "quality_flag": "filtered",
+                    "reason": f"non-positive close price: {row.get('close')}",
+                }
+            )
         df = df[~neg_mask].copy()
 
         # --- Compute daily_return_pct ---
         df = df.sort_values(["symbol", "trade_date"])
         df["prev_close"] = df.groupby("symbol")["close"].shift(1)
-        df["daily_return_pct"] = (
-            (df["close"] - df["prev_close"]) / df["prev_close"]
-        ).round(6)
+        df["daily_return_pct"] = ((df["close"] - df["prev_close"]) / df["prev_close"]).round(6)
         df = df.drop(columns=["prev_close"])
 
         # --- Quality flag: price range check ---
-        suspect_mask = (
-            (df["close"] < _PRICE_FLOOR)
-            | (df["close"] > _PRICE_CEILING)
-            | (df["high"] < df["low"])
-        )
+        suspect_mask = (df["close"] < _PRICE_FLOOR) | (df["close"] > _PRICE_CEILING) | (df["high"] < df["low"])
         df["quality_flag"] = "valid"
         df.loc[suspect_mask, "quality_flag"] = "suspect"
 
         for _, row in df[suspect_mask].iterrows():
-            quality_records.append({
-                "symbol": row.get("symbol", ""),
-                "trade_date": row.get("trade_date"),
-                "quality_flag": "suspect",
-                "reason": (
-                    f"close={row.get('close')} outside [{_PRICE_FLOOR},{_PRICE_CEILING}]"
-                    if not (row.get("close", 1) >= _PRICE_FLOOR
-                            and row.get("close", 0) <= _PRICE_CEILING)
-                    else "high < low"
-                ),
-            })
+            quality_records.append(
+                {
+                    "symbol": row.get("symbol", ""),
+                    "trade_date": row.get("trade_date"),
+                    "quality_flag": "suspect",
+                    "reason": (
+                        f"close={row.get('close')} outside [{_PRICE_FLOOR},{_PRICE_CEILING}]"
+                        if not (row.get("close", 1) >= _PRICE_FLOOR and row.get("close", 0) <= _PRICE_CEILING)
+                        else "high < low"
+                    ),
+                }
+            )
 
         quality_df = pd.DataFrame(
             quality_records,
@@ -274,9 +272,7 @@ class SilverTransformer:
         out_path = out_dir / "report.parquet"
 
         if quality_df.empty:
-            quality_df = pd.DataFrame(
-                columns=["symbol", "trade_date", "quality_flag", "reason"]
-            )
+            quality_df = pd.DataFrame(columns=["symbol", "trade_date", "quality_flag", "reason"])
 
         table = pa.Table.from_pandas(quality_df, schema=_QUALITY_SCHEMA, safe=False)
         pq.write_table(table, out_path, compression="snappy")

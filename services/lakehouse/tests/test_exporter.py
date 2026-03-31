@@ -6,10 +6,9 @@ Mocks the PostgreSQL connection pool so no real database is needed.
 
 from __future__ import annotations
 
-import tempfile
 from datetime import date
 from pathlib import Path
-from unittest.mock import MagicMock, patch, contextmanager
+from unittest.mock import MagicMock
 
 import pandas as pd
 import pyarrow.parquet as pq
@@ -18,10 +17,10 @@ import pytest
 from src.config import Settings
 from src.exporter.pg_exporter import PgExporter
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def config(tmp_path: Path) -> Settings:
@@ -40,24 +39,72 @@ def _make_sample_rows() -> list[tuple]:
     """Return a minimal set of fake warehouse rows."""
     return [
         (
-            1, "CL=F", "WTI Crude Oil", "energy",
-            date(2024, 1, 2), 2024, 1, 2, 1, "Tuesday", True,
-            70.0, 72.0, 69.5, 71.0, 71.0, 1000000,
-            1.0, 1.43, "Yahoo Finance",
+            1,
+            "CL=F",
+            "WTI Crude Oil",
+            "energy",
+            date(2024, 1, 2),
+            2024,
+            1,
+            2,
+            1,
+            2,
+            True,
+            70.0,
+            72.0,
+            69.5,
+            71.0,
+            71.0,
+            1000000,
+            1.0,
+            1.43,
+            "Yahoo Finance",
             pd.Timestamp("2024-01-02 10:00:00", tz="UTC"),
         ),
         (
-            2, "CL=F", "WTI Crude Oil", "energy",
-            date(2024, 1, 3), 2024, 1, 3, 1, "Wednesday", True,
-            71.0, 73.0, 70.0, 72.0, 72.0, 1100000,
-            1.0, 1.41, "Yahoo Finance",
+            2,
+            "CL=F",
+            "WTI Crude Oil",
+            "energy",
+            date(2024, 1, 3),
+            2024,
+            1,
+            3,
+            1,
+            3,
+            True,
+            71.0,
+            73.0,
+            70.0,
+            72.0,
+            72.0,
+            1100000,
+            1.0,
+            1.41,
+            "Yahoo Finance",
             pd.Timestamp("2024-01-03 10:00:00", tz="UTC"),
         ),
         (
-            3, "BZ=F", "Brent Crude Oil", "energy",
-            date(2024, 2, 1), 2024, 2, 1, 1, "Thursday", True,
-            75.0, 77.0, 74.0, 76.0, 76.0, 900000,
-            0.5, 0.66, "Yahoo Finance",
+            3,
+            "BZ=F",
+            "Brent Crude Oil",
+            "energy",
+            date(2024, 2, 1),
+            2024,
+            2,
+            1,
+            1,
+            4,
+            True,
+            75.0,
+            77.0,
+            74.0,
+            76.0,
+            76.0,
+            900000,
+            0.5,
+            0.66,
+            "Yahoo Finance",
             pd.Timestamp("2024-02-01 10:00:00", tz="UTC"),
         ),
     ]
@@ -69,11 +116,29 @@ def _make_pool_mock(rows: list[tuple]) -> MagicMock:
     cursor_mock = MagicMock()
     cursor_mock.fetchall.return_value = rows
     cursor_mock.description = [
-        (col,) for col in [
-            "price_key", "symbol", "commodity_name", "commodity_type",
-            "trade_date", "year", "month", "day", "quarter", "day_of_week",
-            "is_trading_day", "open", "high", "low", "close", "adj_close",
-            "volume", "daily_change", "daily_change_pct", "source", "created_at",
+        (col,)
+        for col in [
+            "price_key",
+            "symbol",
+            "commodity_name",
+            "commodity_type",
+            "trade_date",
+            "year",
+            "month",
+            "day",
+            "quarter",
+            "day_of_week",
+            "is_trading_day",
+            "open",
+            "high",
+            "low",
+            "close",
+            "adj_close",
+            "volume",
+            "daily_change",
+            "daily_change_pct",
+            "source",
+            "created_at",
         ]
     ]
     cursor_mock.__enter__ = MagicMock(return_value=cursor_mock)
@@ -97,6 +162,7 @@ def _make_pool_mock(rows: list[tuple]) -> MagicMock:
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestFullExport:
     """Tests for PgExporter.export_full()."""
@@ -129,7 +195,7 @@ class TestFullExport:
         exporter.export_full()
 
         jan = config.raw_path / "year=2024" / "month=1" / "data.parquet"
-        table = pq.read_table(jan)
+        table = pq.ParquetFile(jan).read()
         required = {"symbol", "trade_date", "close", "volume", "source"}
         assert required.issubset(set(table.schema.names))
 
@@ -149,7 +215,7 @@ class TestFullExport:
         exporter.export_full()
 
         jan = config.raw_path / "year=2024" / "month=1" / "data.parquet"
-        table = pq.read_table(jan)
+        table = pq.ParquetFile(jan).read()
         metadata = table.schema.metadata or {}
         assert b"source" in metadata
 

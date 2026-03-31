@@ -140,25 +140,24 @@ class YahooFinanceExtractor(BaseExtractor):
               AND  c.is_current   = TRUE
         """
         try:
-            with self._db_pool.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute(sql, (symbol,))
-                    row = cur.fetchone()
-                    result = row[0] if row and row[0] is not None else None
-                    if result:
-                        logger.debug(
-                            "Last available date for %s: %s",
-                            symbol,
-                            result,
-                            extra={"symbol": symbol},
-                        )
-                    else:
-                        logger.info(
-                            "No existing data found for %s (first run).",
-                            symbol,
-                            extra={"symbol": symbol},
-                        )
-                    return result
+            with self._db_pool.get_connection() as conn, conn.cursor() as cur:
+                cur.execute(sql, (symbol,))
+                row = cur.fetchone()
+                result = row[0] if row and row[0] is not None else None
+                if result:
+                    logger.debug(
+                        "Last available date for %s: %s",
+                        symbol,
+                        result,
+                        extra={"symbol": symbol},
+                    )
+                else:
+                    logger.info(
+                        "No existing data found for %s (first run).",
+                        symbol,
+                        extra={"symbol": symbol},
+                    )
+                return result
         except Exception as exc:
             logger.error(
                 "Failed to query last available date for %s: %s",

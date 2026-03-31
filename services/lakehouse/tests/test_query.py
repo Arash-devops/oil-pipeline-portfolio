@@ -16,10 +16,10 @@ import pytest
 from src.config import Settings
 from src.query.duckdb_engine import DuckDBEngine
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def config(tmp_path: Path) -> Settings:
@@ -116,24 +116,29 @@ def _write_serving_parquet(config: Settings) -> None:
     """Write minimal serving Parquet files for testing."""
     ms_dir = config.serving_path / "monthly_summary"
     ms_dir.mkdir(parents=True, exist_ok=True)
-    pd.DataFrame([{
-        "symbol": "CL=F",
-        "commodity_name": "WTI Crude Oil",
-        "year": 2024,
-        "month": 1,
-        "trading_days": 2,
-        "avg_close": 71.5,
-        "min_close": 71.0,
-        "max_close": 72.0,
-        "stddev_close": 0.707,
-        "total_volume": 2100000,
-        "monthly_return_pct": 1.41,
-    }]).to_parquet(ms_dir / "data.parquet", index=False)
+    pd.DataFrame(
+        [
+            {
+                "symbol": "CL=F",
+                "commodity_name": "WTI Crude Oil",
+                "year": 2024,
+                "month": 1,
+                "trading_days": 2,
+                "avg_close": 71.5,
+                "min_close": 71.0,
+                "max_close": 72.0,
+                "stddev_close": 0.707,
+                "total_volume": 2100000,
+                "monthly_return_pct": 1.41,
+            }
+        ]
+    ).to_parquet(ms_dir / "data.parquet", index=False)
 
 
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestArbitraryQuery:
     """DuckDBEngine.query() should execute arbitrary SQL."""
@@ -210,7 +215,8 @@ class TestLayerStats:
         stats = engine.layer_stats()
         engine.close()
         expected_keys = {
-            "raw", "curated",
+            "raw",
+            "curated",
             "serving/monthly_summary",
             "serving/price_metrics",
             "serving/commodity_comparison",

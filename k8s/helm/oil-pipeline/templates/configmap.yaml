@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "oil-pipeline.fullname" . }}-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oil-pipeline.labels" . | nindent 4 }}
+data:
+  # Shared PostgreSQL connection
+  DB_HOST: {{ include "oil-pipeline.postgresHost" . | quote }}
+  DB_PORT: {{ .Values.postgres.service.port | quote }}
+  DB_NAME: {{ .Values.postgres.credentials.database | quote }}
+
+  # Lakehouse data directory (inside the lakehouse container)
+  DATA_DIR: {{ .Values.config.dataDir | quote }}
+
+  # API settings (OIL_API_ prefix maps to pydantic-settings fields)
+  OIL_API_PG_HOST: {{ include "oil-pipeline.postgresHost" . | quote }}
+  OIL_API_PG_PORT: {{ .Values.postgres.service.port | quote }}
+  OIL_API_PG_DATABASE: {{ .Values.postgres.credentials.database | quote }}
+  OIL_API_LAKEHOUSE_BASE_PATH: {{ .Values.config.lakehouseBasePath | quote }}
+
+  # Runtime
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}

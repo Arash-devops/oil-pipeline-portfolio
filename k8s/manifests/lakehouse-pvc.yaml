@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lakehouse-data
+  namespace: oil-pipeline
+  labels:
+    app.kubernetes.io/name: lakehouse-data
+    app.kubernetes.io/component: storage
+    app.kubernetes.io/part-of: oil-pipeline
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  # storageClassName: ""  # Omitted — uses the cluster's default StorageClass

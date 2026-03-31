@@ -1,0 +1,19 @@
+# Change .Values.api.service.type to LoadBalancer or add an Ingress for external access.
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "oil-pipeline.fullname" . }}-api
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oil-pipeline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend
+spec:
+  type: {{ .Values.api.service.type }}
+  selector:
+    app.kubernetes.io/name: {{ include "oil-pipeline.name" . }}-api
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  ports:
+    - name: http
+      port: {{ .Values.api.service.port }}
+      targetPort: {{ .Values.api.service.targetPort }}
+      protocol: TCP

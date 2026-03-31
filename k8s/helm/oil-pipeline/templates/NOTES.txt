@@ -1,0 +1,24 @@
+Oil Pipeline has been deployed!
+
+Namespace: {{ .Values.namespace }}
+
+Components:
+  - PostgreSQL:  {{ include "oil-pipeline.fullname" . }}-postgres
+  - Ingestor:    {{ if .Values.ingestor.enabled }}Enabled{{ else }}Disabled{{ end }}
+  - Lakehouse:   {{ if .Values.lakehouse.enabled }}Enabled{{ else }}Disabled{{ end }}
+  - API:         {{ .Values.api.replicaCount }} replica(s)
+
+To access the API locally:
+  kubectl port-forward svc/{{ include "oil-pipeline.fullname" . }}-api \
+    -n {{ .Values.namespace }} 8080:{{ .Values.api.service.port }}
+  Then visit: http://localhost:8080/docs
+
+To check the status of all resources:
+  kubectl get all -n {{ .Values.namespace }}
+
+To view API logs:
+  kubectl logs -l app.kubernetes.io/component=backend \
+    -n {{ .Values.namespace }} -f
+
+To run the Helm test:
+  helm test {{ .Release.Name }} -n {{ .Values.namespace }}

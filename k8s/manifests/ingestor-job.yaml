@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: oil-pipeline-ingestor
+  namespace: oil-pipeline
+  labels:
+    app.kubernetes.io/name: ingestor
+    app.kubernetes.io/component: etl
+    app.kubernetes.io/part-of: oil-pipeline
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: ingestor
+        app.kubernetes.io/component: etl
+        app.kubernetes.io/part-of: oil-pipeline
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-postgres
+          image: postgres:16-alpine
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL to be ready..."
+              until pg_isready -h oil-pipeline-postgres -U arash -d oil_warehouse; do
+                echo "PostgreSQL not ready — retrying in 2s"
+                sleep 2
+              done
+              echo "PostgreSQL is ready."
+      containers:
+        - name: ingestor
+          image: arash/oil-ingestor:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: oil-pipeline-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: oil-pipeline-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: oil-pipeline-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: oil-pipeline-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: oil-pipeline-secret
+                  key: DB_PASSWORD
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: oil-pipeline-config
+                  key: LOG_LEVEL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi

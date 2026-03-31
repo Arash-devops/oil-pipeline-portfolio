@@ -83,9 +83,7 @@ class IngestionPipeline:
         Returns:
             Summary dict keyed by ticker symbol.
         """
-        logger.info(
-            "Starting incremental load for %s", self._config.commodities_list
-        )
+        logger.info("Starting incremental load for %s", self._config.commodities_list)
         summary: PipelineSummary = {}
 
         for symbol in self._config.commodities_list:
@@ -121,18 +119,14 @@ class IngestionPipeline:
     # Private helpers
     # ------------------------------------------------------------------
 
-    def _run_for_all(
-        self, start_date: date, end_date: date, mode: str
-    ) -> PipelineSummary:
+    def _run_for_all(self, start_date: date, end_date: date, mode: str) -> PipelineSummary:
         """Run the pipeline for every configured commodity over a fixed date range."""
         summary: PipelineSummary = {}
         for symbol in self._config.commodities_list:
             summary[symbol] = self._run_one(symbol, start_date, end_date, mode=mode)
         return summary
 
-    def _run_one(
-        self, symbol: str, start_date: date, end_date: date, mode: str
-    ) -> CommodityResult:
+    def _run_one(self, symbol: str, start_date: date, end_date: date, mode: str) -> CommodityResult:
         """Execute the full pipeline for a single commodity / date range.
 
         Any exception is caught and recorded in the result dict so the
@@ -185,7 +179,7 @@ class IngestionPipeline:
             # --- 3. Batch load to staging -----------------------------
             rows_loaded = 0
             for batch_start in range(0, len(valid_df), self._config.BATCH_SIZE):
-                batch = valid_df.iloc[batch_start: batch_start + self._config.BATCH_SIZE]
+                batch = valid_df.iloc[batch_start : batch_start + self._config.BATCH_SIZE]
                 rows_loaded += self._loader.load_to_staging(batch)
             result["rows_loaded"] = rows_loaded
 
@@ -201,9 +195,7 @@ class IngestionPipeline:
             if commodity_key is not None:
                 self._loader.calculate_metrics(commodity_key, start_date, end_date)
             else:
-                logger.warning(
-                    "commodity_key not found for %s; skipping metrics.", symbol
-                )
+                logger.warning("commodity_key not found for %s; skipping metrics.", symbol)
 
             # --- 6. Aggregate monthly summaries ----------------------
             self._aggregate_months_in_range(start_date, end_date)

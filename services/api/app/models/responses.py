@@ -12,10 +12,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ---------------------------------------------------------------------------
 # Envelope
 # ---------------------------------------------------------------------------
+
 
 class MetaInfo(BaseModel):
     """Metadata attached to every list-style API response."""
@@ -36,6 +36,7 @@ class ApiResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Price models — PostgreSQL
 # ---------------------------------------------------------------------------
+
 
 class PriceRecord(BaseModel):
     """Single OHLCV price record from the warehouse."""
@@ -68,6 +69,7 @@ class CommodityRecord(BaseModel):
 # ---------------------------------------------------------------------------
 # Analytics models — DuckDB / gold layer
 # ---------------------------------------------------------------------------
+
 
 class MonthlySummaryRecord(BaseModel):
     """Monthly price aggregation from the gold layer."""
@@ -112,6 +114,7 @@ class CommodityComparisonRecord(BaseModel):
 # ---------------------------------------------------------------------------
 # Health / Info models
 # ---------------------------------------------------------------------------
+
 
 class HealthCheck(BaseModel):
     """Service health status returned by GET /health."""

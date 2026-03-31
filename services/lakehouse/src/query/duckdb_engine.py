@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import logging
 from datetime import date
-from pathlib import Path
 from typing import Any
 
 import duckdb
@@ -193,7 +192,6 @@ class DuckDBEngine:
 
             row_count = 0
             if parquet_files:
-                view_name = layer_name.replace("/", "_")
                 glob = str(layer_path / "**" / "*.parquet")
                 try:
                     row_count = self._con.execute(

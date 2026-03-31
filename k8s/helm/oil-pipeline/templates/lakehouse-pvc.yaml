@@ -1,0 +1,19 @@
+{{- if .Values.lakehouse.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "oil-pipeline.fullname" . }}-lakehouse-data
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oil-pipeline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.lakehouse.storage.size }}
+  {{- with .Values.lakehouse.storage.storageClassName }}
+  storageClassName: {{ . }}
+  {{- end }}
+{{- end }}

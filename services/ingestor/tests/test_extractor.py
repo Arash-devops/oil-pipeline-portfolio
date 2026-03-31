@@ -11,14 +11,13 @@ from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pandas as pd
-import pytest
 
 from src.extractor.yahoo_finance import STANDARD_COLUMNS, YahooFinanceExtractor
-
 
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_mock_pool(last_date=None):
     """Return a mock ConnectionPool whose cursor returns *last_date*."""
@@ -58,6 +57,7 @@ def _yf_history_response() -> pd.DataFrame:
 # ---------------------------------------------------------------------------
 # fetch_historical
 # ---------------------------------------------------------------------------
+
 
 class TestFetchHistorical:
     def test_returns_standard_columns(self):
@@ -112,11 +112,14 @@ class TestFetchHistorical:
 # fetch_latest
 # ---------------------------------------------------------------------------
 
+
 class TestFetchLatest:
     def test_calls_fetch_historical_with_correct_window(self):
         pool = _make_mock_pool()
         extractor = YahooFinanceExtractor(db_pool=pool)
-        with patch.object(extractor, "fetch_historical", return_value=pd.DataFrame(columns=STANDARD_COLUMNS)) as mock_fh:
+        with patch.object(
+            extractor, "fetch_historical", return_value=pd.DataFrame(columns=STANDARD_COLUMNS)
+        ) as mock_fh:
             extractor.fetch_latest("CL=F", days=7)
             args = mock_fh.call_args[0]
             symbol, start_date, end_date = args
@@ -127,6 +130,7 @@ class TestFetchLatest:
 # ---------------------------------------------------------------------------
 # get_last_available_date
 # ---------------------------------------------------------------------------
+
 
 class TestGetLastAvailableDate:
     def test_returns_date_when_data_exists(self):

@@ -8,11 +8,10 @@ serving datasets: monthly_summary, price_metrics, and commodity_comparison.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import duckdb
-import pyarrow as pa
 import pyarrow.parquet as pq
 
 from src.config import Settings
@@ -36,7 +35,7 @@ class GoldAggregator:
         Returns:
             Stats dict with rows written per dataset and total duration.
         """
-        t0 = datetime.now(tz=timezone.utc)
+        t0 = datetime.now(tz=UTC)
         curated_glob = str(self._config.curated_path / "**" / "*.parquet")
 
         con = duckdb.connect(":memory:")
@@ -44,8 +43,7 @@ class GoldAggregator:
             # Check if any curated files exist
             try:
                 con.execute(
-                    f"CREATE VIEW curated AS "
-                    f"SELECT * FROM read_parquet('{curated_glob}', hive_partitioning=true)"
+                    f"CREATE VIEW curated AS SELECT * FROM read_parquet('{curated_glob}', hive_partitioning=true)"
                 )
                 row_count = con.execute("SELECT COUNT(*) FROM curated").fetchone()[0]
             except Exception as exc:
@@ -72,7 +70,7 @@ class GoldAggregator:
         finally:
             con.close()
 
-        duration = (datetime.now(tz=timezone.utc) - t0).total_seconds()
+        duration = (datetime.now(tz=UTC) - t0).total_seconds()
         stats = {
             "monthly_summary_rows": ms_rows,
             "price_metrics_rows": pm_rows,

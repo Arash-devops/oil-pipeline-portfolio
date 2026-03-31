@@ -12,8 +12,8 @@ Configures:
 from __future__ import annotations
 
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator
 
 import structlog
 from fastapi import FastAPI
@@ -30,6 +30,7 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 # Structlog configuration
 # ---------------------------------------------------------------------------
+
 
 def _configure_logging() -> None:
     """Configure structlog with JSON output for structured logging.
@@ -64,8 +65,9 @@ def _configure_logging() -> None:
 # Lifespan
 # ---------------------------------------------------------------------------
 
+
 @asynccontextmanager
-async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     """Manage application startup and shutdown.
 
     Startup:
@@ -101,6 +103,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 # ---------------------------------------------------------------------------
 # App factory
 # ---------------------------------------------------------------------------
+
 
 def create_app() -> FastAPI:
     """Construct and configure the FastAPI application.

@@ -32,9 +32,7 @@ def _build_pipeline(config: Settings) -> tuple[IngestionPipeline, ConnectionPool
     extractor = YahooFinanceExtractor(db_pool=pool, source_name=config.SOURCE_NAME)
     validator = PriceValidator()
     loader = PostgresLoader(pool=pool, config=config)
-    pipeline = IngestionPipeline(
-        config=config, extractor=extractor, validator=validator, loader=loader
-    )
+    pipeline = IngestionPipeline(config=config, extractor=extractor, validator=validator, loader=loader)
     return pipeline, pool
 
 
@@ -51,13 +49,13 @@ def _print_summary(summary: PipelineSummary) -> None:
     print(sep)
     for symbol, result in summary.items():
         row = [
-            symbol[:col_w[0] - 1],
-            str(result.get("status", ""))[:col_w[1] - 1],
+            symbol[: col_w[0] - 1],
+            str(result.get("status", ""))[: col_w[1] - 1],
             str(result.get("rows_fetched", 0)),
             str(result.get("rows_valid", 0)),
             str(result.get("rows_loaded", 0)),
             str(result.get("rows_errors", 0)),
-            str(result.get("mode", ""))[:col_w[6] - 1],
+            str(result.get("mode", ""))[: col_w[6] - 1],
         ]
         print(row_fmt.format(*row))
     print(sep)

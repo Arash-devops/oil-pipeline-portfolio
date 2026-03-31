@@ -1,0 +1,99 @@
+# Default values for oil-pipeline Helm chart.
+# Override at install time with --set key=value or -f custom-values.yaml.
+
+# -- Namespace for all resources
+namespace: oil-pipeline
+
+# -- Global image settings
+global:
+  imagePullPolicy: IfNotPresent
+
+# -- PostgreSQL Configuration
+postgres:
+  image:
+    repository: postgres
+    tag: "16-alpine"
+  service:
+    type: ClusterIP
+    port: 5432
+  storage:
+    size: 5Gi
+    # storageClassName: ""  # Leave empty to use the cluster's default StorageClass
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  credentials:
+    database: oil_warehouse
+    username: arash
+    # WARNING: In production, override this with --set or use an external secret manager.
+    password: warehouse_dev_2026
+
+# -- Ingestor Job Configuration
+ingestor:
+  enabled: true
+  image:
+    repository: arash/oil-ingestor
+    tag: latest
+  mode: incremental
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  backoffLimit: 3
+
+# -- Lakehouse Job Configuration
+lakehouse:
+  enabled: true
+  image:
+    repository: arash/oil-lakehouse
+    tag: latest
+  storage:
+    size: 2Gi
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  backoffLimit: 3
+
+# -- API Configuration
+api:
+  replicaCount: 2
+  image:
+    repository: arash/oil-api
+    tag: latest
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilization: 80
+
+# -- Common runtime configuration
+config:
+  logLevel: INFO
+  # Root directory for Parquet files inside the lakehouse container
+  dataDir: /app/data
+  # API resolves serving Parquet at {lakehouseBasePath}/data/serving/
+  # The PVC is mounted at /opt/lakehouse/data in the API pod, so:
+  # /opt/lakehouse/data/serving/ = correct serving path
+  lakehouseBasePath: /opt/lakehouse

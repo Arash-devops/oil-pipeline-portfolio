@@ -26,9 +26,7 @@ class PriceValidator:
     of every rule it violates before being placed in the ``invalid`` partition.
     """
 
-    def validate_dataframe(
-        self, df: pd.DataFrame
-    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+    def validate_dataframe(self, df: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
         """Validate all rows in *df* and split into valid and invalid partitions.
 
         Rules applied:
@@ -169,6 +167,7 @@ class PriceValidator:
             for err_str in invalid["validation_errors"]:
                 all_errors.extend(e.strip() for e in str(err_str).split(";") if e.strip())
             from collections import Counter
+
             breakdown = Counter(all_errors)
             for msg, count in breakdown.most_common():
                 logger.debug("  Validation error x%d: %s", count, msg)

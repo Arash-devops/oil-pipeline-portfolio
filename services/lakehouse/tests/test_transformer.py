@@ -10,17 +10,15 @@ from datetime import date
 from pathlib import Path
 
 import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
 import pytest
 
 from src.config import Settings
 from src.transformer.silver_transformer import SilverTransformer
 
-
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
+
 
 @pytest.fixture()
 def config(tmp_path: Path) -> Settings:
@@ -79,6 +77,7 @@ def _base_row(
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 class TestNullRemoval:
     """Rows with null close price must be filtered out."""
@@ -140,9 +139,7 @@ class TestQualityFlagging:
         assert df.iloc[0]["quality_flag"] == "valid"
 
     def test_high_less_than_low_is_suspect(self, config: Settings) -> None:
-        _write_raw_partition(
-            config, [_base_row(close=71.0, high=68.0, low=73.0)], 2024, 1
-        )
+        _write_raw_partition(config, [_base_row(close=71.0, high=68.0, low=73.0)], 2024, 1)
         transformer = SilverTransformer(config)
         transformer.transform()
 
@@ -166,7 +163,9 @@ class TestDailyReturnComputation:
         curated_file = config.curated_path / "year=2024" / "month=1" / "data.parquet"
         df = pd.read_parquet(curated_file).sort_values("trade_date")
         # First row has no previous day, so NaN
-        assert pd.isna(df.iloc[0]["daily_return_pct"]) or df.iloc[0]["daily_return_pct"] != df.iloc[0]["daily_return_pct"]
+        assert (
+            pd.isna(df.iloc[0]["daily_return_pct"]) or df.iloc[0]["daily_return_pct"] != df.iloc[0]["daily_return_pct"]
+        )
         # Second row: (110 - 100) / 100 = 0.1
         assert abs(df.iloc[1]["daily_return_pct"] - 0.1) < 1e-4
 

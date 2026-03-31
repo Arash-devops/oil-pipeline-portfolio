@@ -1,0 +1,21 @@
+# Change type to LoadBalancer or add an Ingress resource for external access.
+# ClusterIP is appropriate inside a cluster — use kubectl port-forward for local dev.
+apiVersion: v1
+kind: Service
+metadata:
+  name: oil-pipeline-api
+  namespace: oil-pipeline
+  labels:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/component: backend
+    app.kubernetes.io/part-of: oil-pipeline
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: api
+    app.kubernetes.io/part-of: oil-pipeline
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8000
+      protocol: TCP

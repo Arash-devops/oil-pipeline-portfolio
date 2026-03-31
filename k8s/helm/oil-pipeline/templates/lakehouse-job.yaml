@@ -1,0 +1,85 @@
+{{- if .Values.lakehouse.enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ include "oil-pipeline.fullname" . }}-lakehouse
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "oil-pipeline.labels" . | nindent 4 }}
+    app.kubernetes.io/component: etl
+spec:
+  backoffLimit: {{ .Values.lakehouse.backoffLimit }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "oil-pipeline.name" . }}-lakehouse
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: etl
+        app.kubernetes.io/part-of: oil-pipeline
+    spec:
+      restartPolicy: Never
+      initContainers:
+        - name: wait-for-postgres
+          image: "{{ .Values.postgres.image.repository }}:{{ .Values.postgres.image.tag }}"
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL to be ready..."
+              until pg_isready -h {{ include "oil-pipeline.postgresHost" . }} \
+                    -U {{ .Values.postgres.credentials.username }} \
+                    -d {{ .Values.postgres.credentials.database }}; do
+                echo "PostgreSQL not ready — retrying in 2s"
+                sleep 2
+              done
+              echo "PostgreSQL is ready."
+      containers:
+        - name: lakehouse
+          image: "{{ .Values.lakehouse.image.repository }}:{{ .Values.lakehouse.image.tag }}"
+          imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+          env:
+            - name: DB_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: DB_PORT
+            - name: DB_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: DB_NAME
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-secret
+                  key: DB_USER
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-secret
+                  key: DB_PASSWORD
+            - name: DATA_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: DATA_DIR
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "oil-pipeline.fullname" . }}-config
+                  key: LOG_LEVEL
+          volumeMounts:
+            - name: lakehouse-data
+              mountPath: /app/data
+          resources:
+            {{- toYaml .Values.lakehouse.resources | nindent 12 }}
+      volumes:
+        - name: lakehouse-data
+          persistentVolumeClaim:
+            claimName: {{ include "oil-pipeline.fullname" . }}-lakehouse-data
+{{- end }}

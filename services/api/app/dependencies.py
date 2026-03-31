@@ -8,9 +8,9 @@ Shared FastAPI dependencies for database connections.
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from collections.abc import AsyncGenerator, Generator
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import AsyncGenerator, Generator
 
 import duckdb
 import psycopg
@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 # App-level state
 # ---------------------------------------------------------------------------
 
-APP_START_TIME: datetime = datetime.now(timezone.utc)
+APP_START_TIME: datetime = datetime.now(UTC)
 
 # Module-level pool — None until init_pg_pool() is called during lifespan startup.
 _pg_pool: AsyncConnectionPool | None = None
@@ -33,6 +33,7 @@ _pg_pool: AsyncConnectionPool | None = None
 # ---------------------------------------------------------------------------
 # PostgreSQL pool lifecycle
 # ---------------------------------------------------------------------------
+
 
 async def init_pg_pool() -> None:
     """Create the async PostgreSQL connection pool.
@@ -74,7 +75,8 @@ async def close_pg_pool() -> None:
 # FastAPI dependency: PostgreSQL connection
 # ---------------------------------------------------------------------------
 
-async def get_pg_conn() -> AsyncGenerator[psycopg.AsyncConnection, None]:
+
+async def get_pg_conn() -> AsyncGenerator[psycopg.AsyncConnection]:
     """FastAPI dependency that yields a pooled async PostgreSQL connection.
 
     The connection is automatically returned to the pool after the request.
@@ -95,12 +97,13 @@ async def get_pg_conn() -> AsyncGenerator[psycopg.AsyncConnection, None]:
 # FastAPI dependency: DuckDB connection (sync — runs in thread pool)
 # ---------------------------------------------------------------------------
 
+
 def _serving_path() -> Path:
     """Return the path to the serving-layer Parquet directory."""
     return Path(settings.lakehouse_base_path) / "data" / "serving"
 
 
-def get_duckdb_conn() -> Generator[duckdb.DuckDBPyConnection, None, None]:
+def get_duckdb_conn() -> Generator[duckdb.DuckDBPyConnection]:
     """FastAPI dependency that yields a DuckDB in-memory connection.
 
     Registers serving-layer Parquet files as DuckDB views on each call.
@@ -137,10 +140,7 @@ def _register_serving_views(conn: duckdb.DuckDBPyConnection, serving: Path) -> N
     for view_name, parquet_path in datasets.items():
         if parquet_path.exists():
             posix = parquet_path.as_posix()
-            conn.execute(
-                f"CREATE OR REPLACE VIEW {view_name} AS "
-                f"SELECT * FROM read_parquet('{posix}')"
-            )
+            conn.execute(f"CREATE OR REPLACE VIEW {view_name} AS SELECT * FROM read_parquet('{posix}')")
             logger.debug("DuckDB view registered: %s → %s", view_name, posix)
         else:
             # Create an empty view so queries fail gracefully instead of crashing.
@@ -149,6 +149,4 @@ def _register_serving_views(conn: duckdb.DuckDBPyConnection, serving: Path) -> N
                 view_name,
                 parquet_path,
             )
-            conn.execute(
-                f"CREATE OR REPLACE VIEW {view_name} AS SELECT 1 WHERE FALSE"
-            )
+            conn.execute(f"CREATE OR REPLACE VIEW {view_name} AS SELECT 1 WHERE FALSE")

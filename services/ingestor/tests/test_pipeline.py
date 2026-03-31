@@ -8,19 +8,18 @@ lightweight test doubles so the tests run without a database or network.
 from __future__ import annotations
 
 from datetime import date, timedelta
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock
 
 import pandas as pd
-import pytest
 
-from src.pipeline.ingestion_pipeline import IngestionPipeline
 from src.config import Settings
 from src.extractor.yahoo_finance import STANDARD_COLUMNS
-
+from src.pipeline.ingestion_pipeline import IngestionPipeline
 
 # ---------------------------------------------------------------------------
 # Helpers / fixtures
 # ---------------------------------------------------------------------------
+
 
 def _settings() -> Settings:
     return Settings(
@@ -62,9 +61,7 @@ def _make_pipeline(
     config = _settings()
 
     extractor = MagicMock()
-    extractor.fetch_historical.return_value = (
-        fetch_return if fetch_return is not None else _valid_df()
-    )
+    extractor.fetch_historical.return_value = fetch_return if fetch_return is not None else _valid_df()
     extractor.get_last_available_date.return_value = last_date
 
     validator = MagicMock()
@@ -80,15 +77,14 @@ def _make_pipeline(
     )
     loader.get_commodity_keys.return_value = {"CL=F": 1, "BZ=F": 2}
 
-    pipeline = IngestionPipeline(
-        config=config, extractor=extractor, validator=validator, loader=loader
-    )
+    pipeline = IngestionPipeline(config=config, extractor=extractor, validator=validator, loader=loader)
     return pipeline, extractor, validator, loader
 
 
 # ---------------------------------------------------------------------------
 # run_incremental
 # ---------------------------------------------------------------------------
+
 
 class TestRunIncremental:
     def test_skips_symbol_when_already_up_to_date(self):
@@ -104,7 +100,7 @@ class TestRunIncremental:
     def test_processes_new_data_when_last_date_is_in_the_past(self):
         last = date.today() - timedelta(days=5)
         pipeline, extractor, _, loader = _make_pipeline(last_date=last)
-        summary = pipeline.run_incremental()
+        pipeline.run_incremental()
 
         assert extractor.fetch_historical.call_count == 2  # one per symbol
         # Loader should have been called
@@ -123,6 +119,7 @@ class TestRunIncremental:
 # ---------------------------------------------------------------------------
 # run_backfill
 # ---------------------------------------------------------------------------
+
 
 class TestRunBackfill:
     def test_returns_success_for_all_symbols(self):
@@ -164,6 +161,7 @@ class TestRunBackfill:
 # ---------------------------------------------------------------------------
 # run_full_refresh
 # ---------------------------------------------------------------------------
+
 
 class TestRunFullRefresh:
     def test_truncates_staging_before_backfill(self):

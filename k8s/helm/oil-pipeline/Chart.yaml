@@ -1,0 +1,15 @@
+apiVersion: v2
+name: oil-pipeline
+description: Oil Price Data Engineering Pipeline — PostgreSQL, Python ETL, DuckDB Lakehouse, FastAPI
+type: application
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - data-engineering
+  - oil-prices
+  - fastapi
+  - postgresql
+  - duckdb
+  - etl
+maintainers:
+  - name: Arash

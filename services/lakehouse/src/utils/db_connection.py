@@ -8,8 +8,8 @@ acquire or release connections.
 from __future__ import annotations
 
 import logging
+from collections.abc import Generator
 from contextlib import contextmanager
-from typing import Generator
 
 import psycopg
 from psycopg_pool import ConnectionPool
@@ -55,7 +55,7 @@ class PgConnectionPool:
         )
 
     @contextmanager
-    def get_connection(self) -> Generator[psycopg.Connection, None, None]:
+    def get_connection(self) -> Generator[psycopg.Connection]:
         """Context manager that yields a psycopg v3 Connection.
 
         Commits on clean exit; rolls back and re-raises on exception.
@@ -81,11 +81,10 @@ class PgConnectionPool:
             True if the database responds correctly, False otherwise.
         """
         try:
-            with self.get_connection() as conn:
-                with conn.cursor() as cur:
-                    cur.execute("SELECT 1")
-                    result = cur.fetchone()
-                    return result is not None and result[0] == 1
+            with self.get_connection() as conn, conn.cursor() as cur:
+                cur.execute("SELECT 1")
+                result = cur.fetchone()
+                return result is not None and result[0] == 1
         except Exception as exc:
             logger.error("Health check failed: %s", exc)
             return False

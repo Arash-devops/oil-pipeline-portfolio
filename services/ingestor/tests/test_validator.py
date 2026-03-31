@@ -45,6 +45,7 @@ def _df(*rows: dict) -> pd.DataFrame:
 # Happy path
 # ---------------------------------------------------------------------------
 
+
 class TestValidRows:
     def test_single_valid_row_passes(self, validator):
         valid, invalid = validator.validate_dataframe(_df(_make_valid_row()))
@@ -59,15 +60,14 @@ class TestValidRows:
 
     def test_open_equals_close_is_valid(self, validator):
         """A doji candle (open == close) is perfectly valid."""
-        valid, invalid = validator.validate_dataframe(
-            _df(_make_valid_row(open=73.0, close=73.0, high=73.5, low=72.5))
-        )
+        valid, invalid = validator.validate_dataframe(_df(_make_valid_row(open=73.0, close=73.0, high=73.5, low=72.5)))
         assert len(valid) == 1
 
 
 # ---------------------------------------------------------------------------
 # Rule 1: close > 0
 # ---------------------------------------------------------------------------
+
 
 class TestCloseMustBePositive:
     def test_zero_close_is_invalid(self, validator):
@@ -84,18 +84,15 @@ class TestCloseMustBePositive:
 # Rule 2: close < 500
 # ---------------------------------------------------------------------------
 
+
 class TestCloseSanityCeiling:
     def test_close_at_500_is_invalid(self, validator):
-        _, invalid = validator.validate_dataframe(
-            _df(_make_valid_row(close=500.0, high=500.0, open=499.0))
-        )
+        _, invalid = validator.validate_dataframe(_df(_make_valid_row(close=500.0, high=500.0, open=499.0)))
         assert len(invalid) == 1
         assert "500" in invalid.iloc[0]["validation_errors"]
 
     def test_close_just_below_500_is_valid(self, validator):
-        valid, _ = validator.validate_dataframe(
-            _df(_make_valid_row(close=499.99, high=499.99))
-        )
+        valid, _ = validator.validate_dataframe(_df(_make_valid_row(close=499.99, high=499.99)))
         assert len(valid) == 1
 
 
@@ -103,11 +100,10 @@ class TestCloseSanityCeiling:
 # Rule 3: high >= low
 # ---------------------------------------------------------------------------
 
+
 class TestHighMustBeGteqLow:
     def test_high_below_low_is_invalid(self, validator):
-        _, invalid = validator.validate_dataframe(
-            _df(_make_valid_row(high=70.0, low=75.0))
-        )
+        _, invalid = validator.validate_dataframe(_df(_make_valid_row(high=70.0, low=75.0)))
         assert len(invalid) == 1
         assert "high" in invalid.iloc[0]["validation_errors"].lower()
 
@@ -115,6 +111,7 @@ class TestHighMustBeGteqLow:
 # ---------------------------------------------------------------------------
 # Rule 7: no future dates
 # ---------------------------------------------------------------------------
+
 
 class TestFutureDateIsInvalid:
     def test_tomorrow_is_invalid(self, validator):
@@ -133,6 +130,7 @@ class TestFutureDateIsInvalid:
 # Rule 8: no weekends
 # ---------------------------------------------------------------------------
 
+
 class TestWeekendDateIsInvalid:
     def test_saturday_is_invalid(self, validator):
         # Find the most recent Saturday
@@ -148,6 +146,7 @@ class TestWeekendDateIsInvalid:
 # Rule 9: no null prices
 # ---------------------------------------------------------------------------
 
+
 class TestNullPricesAreInvalid:
     def test_null_close_is_invalid(self, validator):
         row = _make_valid_row()
@@ -160,6 +159,7 @@ class TestNullPricesAreInvalid:
 # ---------------------------------------------------------------------------
 # Rule 10: no duplicates within batch
 # ---------------------------------------------------------------------------
+
 
 class TestDuplicateSymbolDateIsInvalid:
     def test_duplicate_pair_second_row_flagged(self, validator):
@@ -174,6 +174,7 @@ class TestDuplicateSymbolDateIsInvalid:
 # ---------------------------------------------------------------------------
 # Multi-error accumulation
 # ---------------------------------------------------------------------------
+
 
 class TestMultipleErrorsAccumulated:
     def test_two_rules_violated_both_reported(self, validator):

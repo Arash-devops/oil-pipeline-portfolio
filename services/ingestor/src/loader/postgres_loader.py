@@ -76,9 +76,8 @@ class PostgresLoader:
             for _, row in df.iterrows()
         ]
 
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.executemany(self._INSERT_SQL, rows)
+        with self._pool.get_connection() as conn, conn.cursor() as cur:
+            cur.executemany(self._INSERT_SQL, rows)
 
         logger.info(
             "Loaded %d rows to staging.stg_oil_prices",
@@ -94,10 +93,9 @@ class PostgresLoader:
             Dict with keys ``processed``, ``skipped``, ``errors``.
         """
         sql = "SELECT * FROM warehouse.sp_process_staging()"
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql)
-                row = cur.fetchone()
+        with self._pool.get_connection() as conn, conn.cursor() as cur:
+            cur.execute(sql)
+            row = cur.fetchone()
 
         if row is None:
             result = {"processed": 0, "skipped": 0, "errors": 0}
@@ -127,9 +125,8 @@ class PostgresLoader:
             end_date:      End of the date range to (re)calculate.
         """
         sql = "SELECT analytics.sp_calculate_metrics(%s, %s, %s)"
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql, (commodity_key, start_date, end_date))
+        with self._pool.get_connection() as conn, conn.cursor() as cur:
+            cur.execute(sql, (commodity_key, start_date, end_date))
 
         logger.info(
             "sp_calculate_metrics: commodity_key=%d, %s to %s",
@@ -146,9 +143,8 @@ class PostgresLoader:
             month: Calendar month (1-12).
         """
         sql = "SELECT analytics.sp_aggregate_monthly(%s, %s)"
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql, (year, month))
+        with self._pool.get_connection() as conn, conn.cursor() as cur:
+            cur.execute(sql, (year, month))
 
         logger.info("sp_aggregate_monthly: %d-%02d", year, month)
 
@@ -165,10 +161,9 @@ class PostgresLoader:
             FROM   warehouse.dim_commodity
             WHERE  is_current = TRUE
         """
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(sql)
-                rows = cur.fetchall()
+        with self._pool.get_connection() as conn, conn.cursor() as cur:
+            cur.execute(sql)
+            rows = cur.fetchall()
 
         result = {row[0]: row[1] for row in rows}
         logger.debug("Commodity key map: %s", result)
@@ -176,9 +171,8 @@ class PostgresLoader:
 
     def truncate_staging(self) -> None:
         """Truncate ``staging.stg_oil_prices`` for a full refresh."""
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute("TRUNCATE TABLE staging.stg_oil_prices RESTART IDENTITY")
+        with self._pool.get_connection() as conn, conn.cursor() as cur:
+            cur.execute("TRUNCATE TABLE staging.stg_oil_prices RESTART IDENTITY")
         logger.info("staging.stg_oil_prices truncated.")
 
     # ------------------------------------------------------------------
@@ -192,6 +186,7 @@ class PostgresLoader:
             return None
         try:
             import math
+
             f = float(value)
             return None if math.isnan(f) else f
         except (TypeError, ValueError):

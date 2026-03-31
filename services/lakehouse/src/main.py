@@ -27,6 +27,7 @@ logger = get_logger(__name__)
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _print_table(title: str, rows: list[tuple[str, str]]) -> None:
     """Print a simple two-column ASCII summary table.
 
@@ -58,13 +59,14 @@ def _date_arg(value: str) -> date:
     """
     try:
         return datetime.strptime(value, "%Y-%m-%d").date()
-    except ValueError:
-        raise argparse.ArgumentTypeError(f"Date must be YYYY-MM-DD, got: {value}")
+    except ValueError as err:
+        raise argparse.ArgumentTypeError(f"Date must be YYYY-MM-DD, got: {value}") from err
 
 
 # ---------------------------------------------------------------------------
 # Command implementations
 # ---------------------------------------------------------------------------
+
 
 def cmd_export(args: argparse.Namespace, config: Settings) -> int:
     """Run the bronze layer export.
@@ -162,10 +164,11 @@ def cmd_aggregate(args: argparse.Namespace, config: Settings) -> int:
                 ("duration_seconds", stats["duration_seconds"]),
             ],
         )
-        return 0 if any(
-            stats[k] > 0
-            for k in ("monthly_summary_rows", "price_metrics_rows", "commodity_comparison_rows")
-        ) else 1
+        return (
+            0
+            if any(stats[k] > 0 for k in ("monthly_summary_rows", "price_metrics_rows", "commodity_comparison_rows"))
+            else 1
+        )
     except Exception as exc:
         logger.error("Aggregate failed: %s", exc)
         return 2
@@ -270,6 +273,7 @@ def cmd_full_pipeline(args: argparse.Namespace, config: Settings) -> int:
 # ---------------------------------------------------------------------------
 # CLI wiring
 # ---------------------------------------------------------------------------
+
 
 def build_parser() -> argparse.ArgumentParser:
     """Build and return the argument parser."""

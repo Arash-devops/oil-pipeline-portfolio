@@ -66,7 +66,4 @@ class Settings(BaseSettings):
     @property
     def db_dsn(self) -> str:
         """Return a psycopg2-compatible DSN string (password not included in logs)."""
-        return (
-            f"host={self.DB_HOST} port={self.DB_PORT} "
-            f"dbname={self.DB_NAME} user={self.DB_USER}"
-        )
+        return f"host={self.DB_HOST} port={self.DB_PORT} dbname={self.DB_NAME} user={self.DB_USER}"

@@ -9,8 +9,7 @@ snappy compression via PyArrow.
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timezone
-from pathlib import Path
+from datetime import UTC, date, datetime
 from typing import Any
 
 import pandas as pd
@@ -55,29 +54,31 @@ WHERE dc.is_current = TRUE
 ORDER BY dd.full_date, dc.commodity_id
 """
 
-_PARQUET_SCHEMA = pa.schema([
-    pa.field("price_key",       pa.int64()),
-    pa.field("symbol",          pa.string()),
-    pa.field("commodity_name",  pa.string()),
-    pa.field("commodity_type",  pa.string()),
-    pa.field("trade_date",      pa.date32()),
-    pa.field("year",            pa.int32()),
-    pa.field("month",           pa.int32()),
-    pa.field("day",             pa.int32()),
-    pa.field("quarter",         pa.int32()),
-    pa.field("day_of_week",     pa.int16()),
-    pa.field("is_trading_day",  pa.bool_()),
-    pa.field("open",            pa.float64()),
-    pa.field("high",            pa.float64()),
-    pa.field("low",             pa.float64()),
-    pa.field("close",           pa.float64()),
-    pa.field("adj_close",       pa.float64()),
-    pa.field("volume",          pa.int64()),
-    pa.field("daily_change",    pa.float64()),
-    pa.field("daily_change_pct",pa.float64()),
-    pa.field("source",          pa.string()),
-    pa.field("created_at",      pa.timestamp("us", tz="UTC")),
-])
+_PARQUET_SCHEMA = pa.schema(
+    [
+        pa.field("price_key", pa.int64()),
+        pa.field("symbol", pa.string()),
+        pa.field("commodity_name", pa.string()),
+        pa.field("commodity_type", pa.string()),
+        pa.field("trade_date", pa.date32()),
+        pa.field("year", pa.int32()),
+        pa.field("month", pa.int32()),
+        pa.field("day", pa.int32()),
+        pa.field("quarter", pa.int32()),
+        pa.field("day_of_week", pa.int16()),
+        pa.field("is_trading_day", pa.bool_()),
+        pa.field("open", pa.float64()),
+        pa.field("high", pa.float64()),
+        pa.field("low", pa.float64()),
+        pa.field("close", pa.float64()),
+        pa.field("adj_close", pa.float64()),
+        pa.field("volume", pa.int64()),
+        pa.field("daily_change", pa.float64()),
+        pa.field("daily_change_pct", pa.float64()),
+        pa.field("source", pa.string()),
+        pa.field("created_at", pa.timestamp("us", tz="UTC")),
+    ]
+)
 
 
 class PgExporter:
@@ -140,7 +141,7 @@ class PgExporter:
         Returns:
             Stats dict.
         """
-        t0 = datetime.now(tz=timezone.utc)
+        t0 = datetime.now(tz=UTC)
         df = self._fetch(start_date, end_date)
 
         if df.empty:
@@ -149,7 +150,7 @@ class PgExporter:
 
         partitions_written = self._write_partitioned(df)
 
-        duration = (datetime.now(tz=timezone.utc) - t0).total_seconds()
+        duration = (datetime.now(tz=UTC) - t0).total_seconds()
         stats = {
             "total_rows": len(df),
             "partitions_written": partitions_written,
@@ -205,11 +206,10 @@ class PgExporter:
 
         base_query += " ORDER BY dd.full_date, dc.commodity_id"
 
-        with self._pool.get_connection() as conn:
-            with conn.cursor() as cur:
-                cur.execute(base_query, params)
-                rows = cur.fetchall()
-                col_names = [desc[0] for desc in cur.description]
+        with self._pool.get_connection() as conn, conn.cursor() as cur:
+            cur.execute(base_query, params)
+            rows = cur.fetchall()
+            col_names = [desc[0] for desc in cur.description]
 
         df = pd.DataFrame(rows, columns=col_names)
         logger.info("Fetched %d rows from PostgreSQL", len(df))
@@ -227,7 +227,7 @@ class PgExporter:
         Returns:
             Number of partitions written.
         """
-        export_ts = datetime.now(tz=timezone.utc).isoformat()
+        export_ts = datetime.now(tz=UTC).isoformat()
         partitions = df.groupby(["year", "month"])
         count = 0
 
@@ -267,8 +267,7 @@ class PgExporter:
         df = df.copy()
 
         # Convert Decimal columns to float64 (PostgreSQL numeric comes as Decimal)
-        decimal_cols = ["open", "high", "low", "close", "adj_close",
-                        "daily_change", "daily_change_pct"]
+        decimal_cols = ["open", "high", "low", "close", "adj_close", "daily_change", "daily_change_pct"]
         for col in decimal_cols:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce").astype("float64")

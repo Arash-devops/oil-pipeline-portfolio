@@ -9,7 +9,7 @@ Endpoints live directly under /api/v1 (no extra router prefix):
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +29,7 @@ router = APIRouter(tags=["Health & Info"])
 # ---------------------------------------------------------------------------
 # GET /health
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/health",
@@ -71,7 +72,7 @@ async def health_check(
     except Exception as exc:
         logger.warning("DuckDB health check failed: %s", exc)
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     uptime = (now - APP_START_TIME).total_seconds()
     overall = "healthy" if pg_status == "healthy" and duck_status == "healthy" else "degraded"
 
@@ -87,6 +88,7 @@ async def health_check(
 # ---------------------------------------------------------------------------
 # GET /info
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/info",
@@ -111,9 +113,7 @@ async def api_info(
     """
     # PostgreSQL stats
     pg_price_count = await _pg_count(conn, "SELECT COUNT(*) FROM warehouse.fact_oil_prices")
-    pg_commodity_count = await _pg_count(
-        conn, "SELECT COUNT(*) FROM warehouse.dim_commodity WHERE is_current = TRUE"
-    )
+    pg_commodity_count = await _pg_count(conn, "SELECT COUNT(*) FROM warehouse.dim_commodity WHERE is_current = TRUE")
 
     # DuckDB gold-layer row counts
     duck_monthly = _duck_count(duck, "SELECT COUNT(*) FROM monthly_summary")
@@ -202,6 +202,7 @@ async def api_info(
 # ---------------------------------------------------------------------------
 # Private helpers
 # ---------------------------------------------------------------------------
+
 
 async def _pg_count(conn: psycopg.AsyncConnection, sql: str) -> int:
     """Execute a COUNT query against PostgreSQL and return the integer result.

@@ -16,7 +16,8 @@ import functools
 import logging
 import random
 import time
-from typing import Any, Callable, TypeVar
+from collections.abc import Callable
+from typing import Any, TypeVar
 
 F = TypeVar("F", bound=Callable[..., Any])
 
@@ -64,7 +65,7 @@ def retry(
                         )
                         raise
 
-                    delay = (base_delay * (2 ** attempt)) if exponential else base_delay
+                    delay = (base_delay * (2**attempt)) if exponential else base_delay
                     jitter = random.uniform(0.0, 1.0)
                     total = delay + jitter
 

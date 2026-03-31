@@ -35,6 +35,7 @@ router = APIRouter(tags=["Analytics (DuckDB/Lakehouse)"])
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _clean(value: Any) -> Any:
     """Replace NaN floats with None for JSON compatibility.
 
@@ -75,10 +76,7 @@ def _rows_to_dicts(
     col_names = [desc[0] for desc in result.description]
     query_ms = (time.perf_counter() - t0) * 1000
 
-    rows = [
-        {col: _clean(val) for col, val in zip(col_names, row)}
-        for row in raw_rows
-    ]
+    rows = [{col: _clean(val) for col, val in zip(col_names, row, strict=False)} for row in raw_rows]
     return rows, query_ms
 
 
@@ -101,6 +99,7 @@ def _validate_commodity(commodity: str | None) -> None:
 # ---------------------------------------------------------------------------
 # GET /monthly-summary
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/monthly-summary",
@@ -190,6 +189,7 @@ def get_monthly_summary(
 # GET /price-metrics
 # ---------------------------------------------------------------------------
 
+
 @router.get(
     "/price-metrics",
     response_model=ApiResponse,
@@ -246,11 +246,11 @@ def get_price_metrics(
         params.append(commodity)
 
     if start_date is not None:
-        conditions.append('trade_date >= $' + str(len(params) + 1))
+        conditions.append("trade_date >= $" + str(len(params) + 1))
         params.append(start_date.isoformat())
 
     if end_date is not None:
-        conditions.append('trade_date <= $' + str(len(params) + 1))
+        conditions.append("trade_date <= $" + str(len(params) + 1))
         params.append(end_date.isoformat())
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
@@ -290,6 +290,7 @@ def get_price_metrics(
 # ---------------------------------------------------------------------------
 # GET /commodity-comparison
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/commodity-comparison",
@@ -336,11 +337,11 @@ def get_commodity_comparison(
     params: list[Any] = []
 
     if start_date is not None:
-        conditions.append('trade_date >= $' + str(len(params) + 1))
+        conditions.append("trade_date >= $" + str(len(params) + 1))
         params.append(start_date.isoformat())
 
     if end_date is not None:
-        conditions.append('trade_date <= $' + str(len(params) + 1))
+        conditions.append("trade_date <= $" + str(len(params) + 1))
         params.append(end_date.isoformat())
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""

@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: oil-pipeline-config
+  namespace: oil-pipeline
+  labels:
+    app.kubernetes.io/name: oil-pipeline-config
+    app.kubernetes.io/part-of: oil-pipeline
+data:
+  # -- Shared PostgreSQL connection (host resolves via ClusterIP service name)
+  DB_HOST: "oil-pipeline-postgres"
+  DB_PORT: "5432"
+  DB_NAME: "oil_warehouse"
+
+  # -- Lakehouse
+  DATA_DIR: "/app/data"
+
+  # -- API (env prefix OIL_API_ maps to settings fields)
+  OIL_API_PG_HOST: "oil-pipeline-postgres"
+  OIL_API_PG_PORT: "5432"
+  OIL_API_PG_DATABASE: "oil_warehouse"
+  # Path such that {lakehouse_base_path}/data/serving/ resolves correctly
+  # (PVC is mounted at /opt/lakehouse/data in the API pod)
+  OIL_API_LAKEHOUSE_BASE_PATH: "/opt/lakehouse"
+
+  # -- Runtime
+  LOG_LEVEL: "INFO"

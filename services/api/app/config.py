@@ -20,10 +20,7 @@ class Settings(BaseSettings):
 
     # -- API metadata -------------------------------------------------------
     api_title: str = "Oil Price Data API"
-    api_description: str = (
-        "REST API serving oil price data from PostgreSQL warehouse and "
-        "DuckDB/Parquet lakehouse"
-    )
+    api_description: str = "REST API serving oil price data from PostgreSQL warehouse and DuckDB/Parquet lakehouse"
     api_version: str = "1.0.0"
     api_prefix: str = "/api/v1"
     debug: bool = True
@@ -39,9 +36,7 @@ class Settings(BaseSettings):
 
     # -- DuckDB / Lakehouse -------------------------------------------------
     # Resolves services/api/app/config.py → up 3 levels → services/ → lakehouse/
-    lakehouse_base_path: str = str(
-        Path(__file__).resolve().parent.parent.parent / "lakehouse"
-    )
+    lakehouse_base_path: str = str(Path(__file__).resolve().parent.parent.parent / "lakehouse")
 
     # -- CORS ---------------------------------------------------------------
     cors_origins: list[str] = ["*"]
