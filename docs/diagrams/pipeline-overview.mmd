@@ -1,0 +1,34 @@
+graph LR
+    subgraph Sources["Data Sources"]
+        YF["Yahoo Finance API\nyfinance library"]
+    end
+
+    subgraph Processing["Processing"]
+        ING["Ingestor Service\npython:3.13-slim\nbackfill / incremental"]
+        LAKE["Lakehouse Service\npython:3.13-slim\nfull-pipeline"]
+    end
+
+    subgraph Storage["Storage"]
+        PG[("PostgreSQL 16\nport 5433\nstar schema")]
+        PARQUET[("DuckDB + Parquet\nBronze / Silver / Gold\nHive-partitioned")]
+    end
+
+    subgraph Serving["Serving"]
+        API["FastAPI\nport 8000\n/api/v1/*"]
+        SITE["Portfolio Website\nNext.js 14\nGitHub Pages"]
+    end
+
+    subgraph Monitoring["Monitoring"]
+        PROM["Prometheus v3.2.1\nport 9090\nscrape every 15s"]
+        GRAF["Grafana 11.5.2\nport 3000\n10-panel dashboard"]
+    end
+
+    YF -->|"OHLCV data\nCL=F BZ=F NG=F HO=F"| ING
+    ING -->|"INSERT via psycopg v3\nstaging then warehouse"| PG
+    PG -->|"warehouse.fact_oil_prices\npg_exporter.py"| LAKE
+    LAKE -->|"Parquet files\npyarrow snappy"| PARQUET
+    API -->|"async psycopg v3\nSQL queries"| PG
+    API -->|"DuckDB views\nserving layer"| PARQUET
+    SITE -->|"REST calls\nJSON responses"| API
+    API -.->|"GET /metrics\nprometheus_client"| PROM
+    PROM -->|"PromQL queries"| GRAF

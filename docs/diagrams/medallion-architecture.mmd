@@ -1,0 +1,45 @@
+graph LR
+    classDef bronze fill:#cd7f32,stroke:#8b5a00,color:#fff,font-weight:bold
+    classDef silver fill:#9e9e9e,stroke:#616161,color:#fff,font-weight:bold
+    classDef gold fill:#f9a825,stroke:#f57f17,color:#000,font-weight:bold
+    classDef source fill:#1565c0,stroke:#0d47a1,color:#fff
+    classDef consumer fill:#2e7d32,stroke:#1b5e20,color:#fff
+
+    PG[("PostgreSQL 16\nwarehouse.fact_oil_prices\n+ dim_commodity + dim_date")]
+
+    subgraph Bronze["Bronze Layer — Raw Ingest"]
+        B1["data/raw/oil_prices/\nsymbol=CL=F/year=2024/month=01/\ndata.parquet\nSchema: symbol trade_date OHLCV"]
+    end
+
+    subgraph Silver["Silver Layer — Curated"]
+        S1["data/curated/oil_prices/\nsymbol=CL=F/year=2024/month=01/\ndata.parquet\nValidated + null-filled + typed"]
+        QR["_quality_report/\nrow counts per partition"]
+    end
+
+    subgraph Gold["Gold Layer — Serving"]
+        G1["monthly_summary\navg/min/max close\nstddev total_volume\nmonthly_return_pct"]
+        G2["price_metrics\nma7 ma30 ma90\nvolatility_20d\nbollinger_upper/lower"]
+        G3["commodity_comparison\nwti_close brent_close\nspread ratio"]
+    end
+
+    subgraph API["FastAPI /api/v1/analytics/*"]
+        E1["/monthly-summary"]
+        E2["/price-metrics"]
+        E3["/commodity-comparison"]
+    end
+
+    PG -->|"pg_exporter.py\npsycopg v3 + PyArrow\nHive-partitioned write"| B1
+    B1 -->|"silver_transformer.py\nDuckDB + PyArrow\nvalidation + type coerce"| S1
+    S1 -->|"quality report"| QR
+    S1 -->|"gold_aggregator.py\nDuckDB window functions"| G1
+    S1 -->|"gold_aggregator.py\nrolling MA + Bollinger"| G2
+    S1 -->|"gold_aggregator.py\nJOIN CL=F with BZ=F"| G3
+    G1 -->|"DuckDB view\nread_parquet"| E1
+    G2 -->|"DuckDB view\nread_parquet"| E2
+    G3 -->|"DuckDB view\nread_parquet"| E3
+
+    class PG source
+    class B1 bronze
+    class S1,QR silver
+    class G1,G2,G3 gold
+    class E1,E2,E3 consumer

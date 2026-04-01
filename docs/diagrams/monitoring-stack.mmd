@@ -1,0 +1,37 @@
+graph LR
+    subgraph FastAPI["FastAPI Service — oil_api (port 8000)"]
+        REQ["Incoming HTTP Request"]
+        MW["MetricsMiddleware\nBaseHTTPMiddleware\nskips /metrics path"]
+        ROUTE["Router Handlers\n/api/v1/prices/*\n/api/v1/analytics/*\n/api/v1/health"]
+        PC["prometheus_client\nCounter + Histogram + Gauge"]
+        MEND["GET /metrics\ngenerate_latest\nCONTENT_TYPE_LATEST"]
+        REQ --> MW
+        MW --> ROUTE
+        MW --> PC
+        PC --> MEND
+    end
+
+    subgraph Metrics["Metrics Tracked"]
+        M1["http_requests_total\nmethod endpoint status_code"]
+        M2["http_request_duration_seconds\nmethod endpoint\nbuckets 5ms-10s"]
+        M3["http_requests_in_progress\nmethod"]
+        M4["db_query_duration_seconds\ndatabase operation\nbuckets 1ms-2.5s"]
+        M5["app_info\nversion label"]
+        M6["process_* metrics\ncpu memory fds\nauto from prometheus_client"]
+    end
+
+    subgraph Prom["Prometheus v3.2.1 — oil_prometheus (port 9090)"]
+        SCRAPE["Scrape job: oil-pipeline-api\ntarget: api:8000\npath: /metrics\ninterval: 15s"]
+        TSDB["TSDB Storage\nretention: 7 days\nprometheus-data volume"]
+        SCRAPE --> TSDB
+    end
+
+    subgraph Grafana["Grafana 11.5.2 — oil_grafana (port 3000)"]
+        DS["Auto-provisioned Datasource\nPrometheus — http://prometheus:9090"]
+        DASH["Auto-provisioned Dashboard\nOil Pipeline API Monitoring\n10 panels across 4 rows"]
+        DS --> DASH
+    end
+
+    MEND -->|"HTTP GET every 15s"| SCRAPE
+    TSDB -->|"PromQL"| DS
+    M1 & M2 & M3 & M4 & M5 & M6 -.->|"registered on\nmodule load"| PC

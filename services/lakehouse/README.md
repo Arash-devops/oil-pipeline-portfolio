@@ -1,153 +1,125 @@
-# Oil Price Lakehouse — DuckDB + Parquet
+# Oil Price Lakehouse
 
-A medallion-architecture lakehouse for oil price analytics, built on DuckDB and Apache Parquet. Reads from the PostgreSQL `oil_warehouse` and materialises three layers of analytical data locally.
+Batch service that transforms the PostgreSQL data warehouse into a medallion-architecture Parquet lakehouse. Implements Bronze → Silver → Gold layers using PyArrow for Parquet I/O and DuckDB for in-process SQL transformations.
 
-## Architecture
+---
 
-```
-PostgreSQL Warehouse
-       |
-       | psycopg v3
-       v
-+------+------+
-|   BRONZE     |  raw/oil_prices/year={Y}/month={M}/data.parquet
-|  (pg_exporter)|  snappy-compressed, full fidelity
-+------+------+
-       |
-       | DuckDB SQL
-       v
-+------+------+
-|   SILVER     |  curated/oil_prices/year={Y}/month={M}/data.parquet
-|(transformer) |  nulls removed, negatives removed, daily_return_pct added
-+------+------+
-       |
-       | DuckDB SQL
-       v
-+------+------+
-|    GOLD      |  serving/monthly_summary/data.parquet
-| (aggregator) |  serving/price_metrics/data.parquet
-+------+------+  serving/commodity_comparison/data.parquet
-       |
-       | DuckDB in-memory views
-       v
-+------+------+
-|  QUERY LAYER |  Arbitrary SQL + convenience methods
-|(duckdb_engine)|
-+--------------+
-```
+## What it does
 
-## Why Medallion Architecture?
+Reads `warehouse.fact_oil_prices` (joined to dimension tables) from PostgreSQL and writes a three-layer Parquet lakehouse:
 
-| Layer | Purpose | Audience |
-|-------|---------|----------|
-| Bronze | Raw, immutable copy of source data | Debugging, reprocessing |
-| Silver | Cleaned, enriched, validated | Data analysts, ML features |
-| Gold | Pre-aggregated serving tables | Dashboards, APIs, reports |
+1. **Bronze** — exact copy of the warehouse, Hive-partitioned by symbol, year, and month
+2. **Silver** — validated, null-filled, and type-coerced version of Bronze
+3. **Gold** — three analytical serving datasets consumed by the FastAPI analytics endpoints
 
-Separating concerns this way means a bad transformation never corrupts the raw data, and aggregations stay cheap because silver is already clean.
+---
 
-## Quick Start
+## Medallion layers
 
-```bash
-cd services/lakehouse
-python -m venv .venv
-# Windows
-.venv\Scripts\activate
-# macOS/Linux
-source .venv/bin/activate
+### Bronze — Raw Ingest
 
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your connection details
+**Path:** `{DATA_DIR}/raw/oil_prices/symbol=CL=F/year=2024/month=01/data.parquet`
 
-# Full pipeline (export -> transform -> aggregate)
-python -m src.main full-pipeline
+Exact projection from `fact_oil_prices` with dimension attributes denormalized in. Written with a fixed PyArrow schema (typed columns, no implicit inference). Compression: snappy.
 
-# Or step by step
-python -m src.main export
-python -m src.main transform
-python -m src.main aggregate
-```
+### Silver — Curated
 
-## CLI Usage
+**Path:** `{DATA_DIR}/curated/oil_prices/symbol=CL=F/year=2024/month=01/data.parquet`
 
-```bash
-# Export all data from PostgreSQL
-python -m src.main export
+Applies these transformations over Bronze via DuckDB:
+- Forward-fill OHLCV nulls within each symbol partition
+- Replace remaining nulls with 0 (volume) or previous-close (price changes)
+- Cast all price columns to `DOUBLE PRECISION`
+- Filter rows with `price_close <= 0`
+- Write a per-partition quality report to `{DATA_DIR}/curated/_quality_report/`
 
-# Incremental export for a date range
-python -m src.main export --start-date 2024-01-01 --end-date 2024-12-31
+### Gold — Serving
 
-# Transform bronze to silver
-python -m src.main transform
+**Path:** `{DATA_DIR}/serving/{dataset_name}/data.parquet`
 
-# Aggregate silver to gold
-python -m src.main aggregate
+Three datasets written as flat (non-partitioned) Parquet files:
 
-# Interactive SQL prompt
-python -m src.main query
-# sql> SELECT symbol, COUNT(*) FROM curated GROUP BY symbol
+| Dataset | Columns | Description |
+|---------|---------|-------------|
+| `monthly_summary` | `symbol`, `commodity_name`, `year`, `month`, `trading_days`, `avg_close`, `min_close`, `max_close`, `stddev_close`, `total_volume`, `monthly_return_pct` | Monthly price aggregations per commodity |
+| `price_metrics` | `symbol`, `trade_date`, `close`, `ma7`, `ma30`, `ma90`, `volatility_20d`, `bollinger_upper`, `bollinger_lower` | Rolling statistics per trading day |
+| `commodity_comparison` | `trade_date`, `wti_close`, `brent_close`, `spread`, `ratio` | Daily WTI vs Brent spread and price ratio |
 
-# Print layer statistics
-python -m src.main stats
+---
 
-# Run everything in sequence
-python -m src.main full-pipeline
-python -m src.main full-pipeline --start-date 2024-01-01 --end-date 2024-12-31
-```
-
-## Query Examples
-
-```sql
--- Latest price for each commodity
-SELECT symbol, MAX(trade_date) AS date, close
-FROM curated
-GROUP BY symbol, close
-ORDER BY symbol;
-
--- Monthly WTI average price
-SELECT year, month, ROUND(AVG(close), 2) AS avg_close
-FROM curated
-WHERE symbol = 'CL=F'
-GROUP BY year, month
-ORDER BY year, month;
-
--- WTI/Brent spread over time
-SELECT * FROM commodity_comparison
-WHERE trade_date >= '2024-01-01'
-ORDER BY trade_date;
-
--- Bollinger band squeeze (narrow bands = low volatility)
-SELECT trade_date, symbol,
-       bollinger_upper - bollinger_lower AS band_width
-FROM price_metrics
-ORDER BY band_width ASC
-LIMIT 20;
-```
-
-## File Structure
+## Output file structure
 
 ```
 data/
 ├── raw/
 │   └── oil_prices/
-│       ├── year=2020/month=1/data.parquet
-│       ├── year=2020/month=2/data.parquet
-│       └── ...
+│       ├── symbol=BZ=F/year=2020/month=01/data.parquet
+│       ├── symbol=CL=F/...
+│       ├── symbol=HO=F/...
+│       └── symbol=NG=F/...
 ├── curated/
-│   ├── oil_prices/
-│   │   ├── year=2020/month=1/data.parquet
-│   │   └── ...
+│   ├── oil_prices/          (same Hive partition structure as raw/)
 │   └── _quality_report/
-│       └── report.parquet
 └── serving/
     ├── monthly_summary/data.parquet
     ├── price_metrics/data.parquet
     └── commodity_comparison/data.parquet
 ```
 
-## Running Tests
+---
+
+## Configuration
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_HOST` | `localhost` | PostgreSQL host |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_NAME` | `oil_warehouse` | Database name |
+| `DB_USER` | `arash` | Database user |
+| `DB_PASSWORD` | `warehouse_dev_2026` | Database password |
+| `DATA_DIR` | `data` | Root directory for Parquet output |
+| `LOG_LEVEL` | `INFO` | Python logging level |
+
+In Docker Compose, `DATA_DIR=/app/data` and the `lakehouse-data` volume is mounted at `/app/data`. The API mounts the same volume at `/opt/lakehouse/data` (read-only).
+
+---
+
+## How to run
+
+### Docker (recommended)
 
 ```bash
-pytest tests/ -v
+# Full pipeline (export → transform → aggregate)
+docker compose run lakehouse
+
+# Individual stages
+docker compose run lakehouse python -m src.main export
+docker compose run lakehouse python -m src.main transform
+docker compose run lakehouse python -m src.main aggregate
+
+# Interactive SQL prompt over all layers
+docker compose run lakehouse python -m src.main query
+
+# Layer statistics
+docker compose run lakehouse python -m src.main stats
+
+# Incremental export (specific date range)
+docker compose run lakehouse python -m src.main export \
+  --start-date 2024-01-01 --end-date 2024-03-31
 ```
+
+### Standalone
+
+```bash
+cd services/lakehouse
+pip install -r requirements.txt
+python -m src.main full-pipeline
+```
+
+---
+
+## Performance notes
+
+A full pipeline run over 5 years of data for 4 commodities (~20,000 rows) completes in approximately 1–3 seconds on a modern laptop. The dominant cost is the initial PostgreSQL export; DuckDB transformation stages run in well under 1 second due to in-process columnar execution.
+
+The interactive `query` command registers all layers as DuckDB views (`raw`, `curated`, `monthly_summary`, `price_metrics`, `commodity_comparison`) and provides a SQL REPL for ad-hoc exploration.

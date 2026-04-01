@@ -1,125 +1,109 @@
-# Oil Price Ingestion Service
+# Oil Price Ingestor
 
-Python service that pulls OHLCV data from Yahoo Finance and loads it into the
-`oil_warehouse` PostgreSQL data warehouse via a staging-first ELT pipeline.
+Batch service that fetches daily OHLCV energy commodity prices from Yahoo Finance and loads them into the PostgreSQL data warehouse.
 
-## Architecture
+---
 
+## What it does
+
+1. Calls `yfinance.download()` for each configured ticker symbol
+2. Validates each row (price bounds, date sanity, required fields)
+3. Batch-INSERTs valid rows into `staging.stg_oil_prices` (500 rows/batch)
+4. Calls `sp_process_staging()` to promote validated rows to `warehouse.fact_oil_prices`
+5. Prints a per-symbol ASCII summary table and exits with a meaningful exit code
+
+---
+
+## Commodities tracked
+
+| Ticker | Instrument | Exchange |
+|--------|-----------|---------|
+| `CL=F` | WTI Crude Oil (West Texas Intermediate) | NYMEX |
+| `BZ=F` | Brent Crude Oil | ICE |
+| `NG=F` | Natural Gas | NYMEX |
+| `HO=F` | Heating Oil (No. 2) | NYMEX |
+
+Add or remove tickers by changing the `COMMODITIES` environment variable (comma-separated).
+
+---
+
+## Modes
+
+| Command | What happens |
+|---------|-------------|
+| `backfill` | Fetches full history (default: 5 years) for all commodities |
+| `incremental` | Fetches only rows newer than the latest date already in the warehouse |
+| `refresh` | Truncates the staging table, then runs a full backfill |
+| `health` | Checks database connectivity; exits 0 if reachable, 2 if not |
+
+---
+
+## Configuration
+
+All settings are read from environment variables (or a `.env` file):
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DB_HOST` | `localhost` | PostgreSQL host |
+| `DB_PORT` | `5432` | PostgreSQL port |
+| `DB_NAME` | `oil_warehouse` | Database name |
+| `DB_USER` | `arash` | Database user |
+| `DB_PASSWORD` | `warehouse_dev_2026` | Database password |
+| `COMMODITIES` | `CL=F,BZ=F,NG=F,HO=F` | Comma-separated ticker symbols |
+| `SOURCE_NAME` | `Yahoo Finance` | Label written to `dim_source` |
+| `LOG_LEVEL` | `INFO` | Python logging level |
+| `RETRY_MAX_ATTEMPTS` | `3` | Max retries for network calls |
+| `RETRY_BASE_DELAY` | `2.0` | Base delay (seconds) between retries |
+| `BACKFILL_YEARS` | `5` | Years of history to fetch on backfill |
+| `BATCH_SIZE` | `500` | Rows per INSERT batch |
+
+Copy `.env.example` to `.env` and edit before running locally.
+
+---
+
+## How to run
+
+### Docker (recommended)
+
+```bash
+# Full backfill (default)
+docker compose run ingestor
+
+# Incremental load
+docker compose run ingestor python -m src.main incremental
+
+# Connectivity check
+docker compose run ingestor python -m src.main health
 ```
-Yahoo Finance API
-      |
-      v
-[YahooFinanceExtractor]  -- yfinance library
-      |
-      | pandas DataFrame (symbol, trade_date, open, high, low, close, adj_close, volume)
-      v
-[PriceValidator]         -- 10 business rules applied in a single pass
-      |
-      | (valid_df, invalid_df)
-      v
-[PostgresLoader]
-  |-- load_to_staging()         INSERT into staging.stg_oil_prices (batch)
-  |-- process_staging()         CALL warehouse.sp_process_staging()
-  |-- calculate_metrics()       CALL analytics.sp_calculate_metrics()
-  |-- aggregate_monthly()       CALL analytics.sp_aggregate_monthly()
-      |
-      v
-PostgreSQL oil_warehouse
-  staging.stg_oil_prices       (raw landing)
-  warehouse.fact_oil_prices    (clean, conformed)
-  analytics.price_metrics      (MA, RSI, volatility)
-  analytics.monthly_summary    (monthly aggregates)
-```
 
-## Setup
+### Standalone (requires a local PostgreSQL with the warehouse schema)
 
 ```bash
 cd services/ingestor
-python -m venv .venv
-source .venv/bin/activate       # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
-cp .env.example .env
-# Edit .env with your database credentials
-```
-
-## Usage
-
-```bash
-# Full historical backfill (5 years by default)
 python -m src.main backfill
-
-# Incremental load (only new data since last run)
 python -m src.main incremental
-
-# Full refresh (truncate staging + backfill)
-python -m src.main refresh
-
-# Health check
 python -m src.main health
 ```
 
-## Run with Docker
+---
 
-```bash
-# Build
-docker build -t oil-price-ingestor .
+## Exit codes
 
-# Run (pass credentials via environment)
-docker run --rm \
-  -e DB_HOST=host.docker.internal \
-  -e DB_PASSWORD=warehouse_dev_2026 \
-  oil-price-ingestor incremental
-```
+| Code | Meaning |
+|------|---------|
+| `0` | All symbols processed successfully |
+| `1` | Partial failure (some symbols errored) |
+| `2` | Total failure (all symbols errored, or DB unreachable) |
 
-## Configuration Reference
+---
 
-| Variable | Default | Description |
-|---|---|---|
-| DB_HOST | localhost | PostgreSQL host |
-| DB_PORT | 5432 | PostgreSQL port |
-| DB_NAME | oil_warehouse | Database name |
-| DB_USER | arash | Database user |
-| DB_PASSWORD | (required) | Database password |
-| COMMODITIES | CL=F,BZ=F,NG=F,HO=F | Comma-separated ticker symbols |
-| SOURCE_NAME | Yahoo Finance | Label written to dim_source |
-| LOG_LEVEL | INFO | Python logging level |
-| RETRY_MAX_ATTEMPTS | 3 | Network retry attempts |
-| RETRY_BASE_DELAY | 2.0 | Base delay in seconds (exponential backoff) |
-| BACKFILL_YEARS | 5 | Years of history for full backfill |
-| BATCH_SIZE | 500 | Rows per staging INSERT batch |
+## Key implementation details
 
-## Validation Rules
+**Retry logic:** `tenacity` with exponential backoff — `wait_exponential(multiplier=1, min=RETRY_BASE_DELAY, max=60)`. Network errors from `yfinance` (connection timeouts, rate limits) are retried up to `RETRY_MAX_ATTEMPTS` times before the symbol is marked as `error` in the summary.
 
-Each row is checked against 10 rules before reaching the database:
+**Connection pooling:** `psycopg_pool.ConnectionPool` (sync) with min 2, max 10 connections. The pool opens eagerly on startup and closes in the `finally` block of each command handler.
 
-1. `close` > 0
-2. `close` < 500 (sanity ceiling for oil prices)
-3. `high` >= `low`
-4. `high` >= `open` and `high` >= `close`
-5. `low` <= `open` and `low` <= `close`
-6. `volume` >= 0
-7. `trade_date` not in the future
-8. `trade_date` is a weekday
-9. No null values in price columns
-10. No duplicate `(symbol, trade_date)` pairs within the batch
+**Validation rules:** non-null `symbol` and `price_close`; `price_close > 0`; `price_high >= price_low` when both present; `trade_date` is not in the future; `trade_date` is not a weekend. Failed rows are marked `is_valid = FALSE` with a semicolon-separated `validation_errors` string.
 
-Invalid rows are logged with their error descriptions. They never reach the
-warehouse but remain in `staging.stg_oil_prices` with `is_valid = FALSE`
-for audit purposes.
-
-## Error Handling
-
-- **Yahoo Finance down**: the extractor returns an empty DataFrame;
-  the pipeline logs a warning and skips the commodity for this run.
-- **Single commodity failure**: logged as an error; all other
-  commodities in the run continue normally.
-- **Database connection failure**: the ConnectionPool raises an
-  exception which propagates to `main.py` and exits with code 2.
-- **Partial failure**: if some but not all commodities fail, exit code 1
-  is returned so the caller (e.g. Airflow) can distinguish from total failure.
-
-## Running Tests
-
-```bash
-pytest tests/ -v
-```
+**Idempotency:** The warehouse fact table has a `UNIQUE (date_key, commodity_key, source_key)` constraint. The stored procedure uses `INSERT ... ON CONFLICT DO NOTHING`, making repeated runs safe.

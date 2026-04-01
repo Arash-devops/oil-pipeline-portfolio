@@ -1,0 +1,34 @@
+graph TD
+    subgraph Network["Docker Network: oil-network (bridge)"]
+        subgraph RunOnce["Run-Once Batch Jobs"]
+            ING["oil_ingestor\nservices/ingestor\nEntrypoint: python -m src.main backfill"]
+            LAKE["oil_lakehouse\nservices/lakehouse\nCmd: python -m src.main full-pipeline"]
+        end
+
+        subgraph LongRunning["Long-Running Services"]
+            PG[("oil_warehouse_db_compose\npostgres:16\nhost port 5433")]
+            API["oil_api\nservices/api\nuvicorn port 8000"]
+            PROM["oil_prometheus\nprom/prometheus:v3.2.1\nhost port 9090"]
+            GRAF["oil_grafana\ngrafana/grafana:11.5.2\nhost port 3000"]
+        end
+    end
+
+    subgraph Volumes["Named Volumes"]
+        PGVOL[("pgdata\noil_pgdata")]
+        LAKEVOL[("lakehouse-data\noil_lakehouse_data")]
+        PROMVOL[("prometheus-data")]
+        GRAFVOL[("grafana-data")]
+    end
+
+    PG -->|"service_healthy\npg_isready check"| ING
+    ING -->|"service_completed_successfully"| LAKE
+    PG -->|"service_healthy"| API
+    LAKE -->|"service_completed_successfully"| API
+    API -->|"service_started"| PROM
+    PROM --> GRAF
+
+    PG --- PGVOL
+    LAKE --- LAKEVOL
+    API --- LAKEVOL
+    PROM --- PROMVOL
+    GRAF --- GRAFVOL

@@ -1,0 +1,61 @@
+erDiagram
+    dim_date {
+        int date_key PK
+        date full_date
+        smallint day_of_week
+        smallint month
+        smallint quarter
+        smallint year
+        boolean is_weekend
+        boolean is_trading_day
+    }
+
+    dim_commodity {
+        int commodity_key PK
+        varchar commodity_id
+        varchar commodity_name
+        varchar category
+        varchar currency
+        boolean is_current
+        timestamp valid_from
+        timestamp valid_to
+        int version
+    }
+
+    dim_source {
+        int source_key PK
+        varchar source_name
+        varchar source_type
+        decimal reliability_score
+        boolean is_active
+    }
+
+    fact_oil_prices {
+        bigint price_key PK
+        int date_key FK
+        int commodity_key FK
+        int source_key FK
+        decimal price_open
+        decimal price_high
+        decimal price_low
+        decimal price_close
+        decimal adj_close
+        bigint volume
+        decimal daily_change
+        decimal daily_change_pct
+    }
+
+    stg_oil_prices {
+        bigint staging_id PK
+        varchar symbol
+        date trade_date
+        decimal price_close
+        boolean is_valid
+        boolean is_processed
+        text validation_errors
+    }
+
+    fact_oil_prices }o--|| dim_date : "date_key"
+    fact_oil_prices }o--|| dim_commodity : "commodity_key"
+    fact_oil_prices }o--|| dim_source : "source_key"
+    stg_oil_prices |o--o{ fact_oil_prices : "promotes to"

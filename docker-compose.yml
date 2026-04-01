@@ -108,11 +108,59 @@ services:
     networks:
       - oil-network
 
+  # ---------------------------------------------------------------------------
+  # Prometheus — scrapes /metrics from the API every 15 s.
+  # Retains 7 days of TSDB data in the named volume.
+  # ---------------------------------------------------------------------------
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    container_name: oil_prometheus
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9090:9090"
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.retention.time=7d"
+      - "--web.enable-lifecycle"
+    networks:
+      - oil-network
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # Grafana — auto-provisions the Prometheus datasource and the API dashboard.
+  # Login: admin / oilpipeline2026
+  # ---------------------------------------------------------------------------
+  grafana:
+    image: grafana/grafana:11.5.2
+    container_name: oil_grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=oilpipeline2026
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    networks:
+      - oil-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
 volumes:
   pgdata:
     name: oil_pgdata
   lakehouse-data:
     name: oil_lakehouse_data
+  prometheus-data:
+  grafana-data:
 
 networks:
   oil-network:

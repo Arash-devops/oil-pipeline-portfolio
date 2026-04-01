@@ -1,0 +1,36 @@
+graph TD
+    PUSH["Push / PR\nto master branch"]
+
+    subgraph CI["ci.yml — Continuous Integration"]
+        subgraph Lint["Linting (parallel)"]
+            LP["lint-python\nmatrix: ingestor lakehouse api\nruff check + ruff format --check"]
+            LF["lint-frontend\nESLint via npm run lint"]
+        end
+
+        subgraph Tests["Testing (parallel)"]
+            TA["test-api\npip install requirements.txt\npython -m pytest tests/ -v"]
+            TI["test-ingestor\nif tests/ exists: pytest\notherwise: skip"]
+            TL["test-lakehouse\nif tests/ exists: pytest\notherwise: skip"]
+        end
+
+        subgraph Build["Docker Build (matrix, after lint+test)"]
+            DB["docker-build\ningestor / lakehouse / api\ndocker/build-push-action@v6\nGHA layer cache\npush: false"]
+        end
+    end
+
+    subgraph Deploy["deploy.yml — GitHub Pages (on push to master)"]
+        NB["npm run build\nNODE_ENV=production\nNext.js static export"]
+        UA["upload-pages-artifact\npath: ./out"]
+        DP["deploy-pages\nGitHub Pages environment"]
+    end
+
+    PUSH --> LP
+    PUSH --> LF
+    PUSH --> TA
+    PUSH --> TI
+    PUSH --> TL
+    LP --> DB
+    TA --> DB
+    PUSH --> NB
+    NB --> UA
+    UA --> DP

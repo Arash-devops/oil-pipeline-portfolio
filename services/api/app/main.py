@@ -22,6 +22,7 @@ from fastapi.responses import RedirectResponse
 
 from app.config import settings
 from app.dependencies import close_pg_pool, init_pg_pool
+from app.metrics import MetricsMiddleware, metrics_endpoint
 from app.routers import analytics, health, prices
 
 logger = structlog.get_logger(__name__)
@@ -130,6 +131,9 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Prometheus metrics instrumentation (outermost — captures all requests).
+    application.add_middleware(MetricsMiddleware)
+
     # Routers
     application.include_router(
         prices.router,
@@ -149,6 +153,9 @@ def create_app() -> FastAPI:
     async def root_redirect() -> RedirectResponse:
         """Redirect the bare root URL to the Swagger UI."""
         return RedirectResponse(url="/docs")
+
+    # Prometheus scrape endpoint — not part of the OpenAPI schema.
+    application.add_route("/metrics", metrics_endpoint)
 
     return application
 
