@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Link from 'next/link';
 import { siteConfig } from '@/data/config';
 
 const navLinks = [
@@ -74,12 +75,12 @@ export default function Navbar() {
             ))}
             {externalLinks.map((link) => (
               <li key={link.href}>
-                <a
+                <Link
                   href={link.href}
                   className="px-4 py-2 text-sm font-medium text-cyan-400/80 hover:text-cyan-400 rounded-lg hover:bg-cyan-400/5 transition-all duration-200 font-sans"
                 >
                   {link.label}
-                </a>
+                </Link>
               </li>
             ))}
           </ul>
@@ -141,12 +142,13 @@ export default function Navbar() {
                 </motion.li>
               ))}
               <li className="pt-2 border-t border-white/5 mt-2">
-                <a
+                <Link
                   href="/pipeline"
                   className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-cyan-400 hover:bg-white/5 rounded-lg transition-all duration-200"
+                  onClick={() => setMenuOpen(false)}
                 >
                   Oil Pipeline Deep Dive →
-                </a>
+                </Link>
               </li>
               <li>
                 <a

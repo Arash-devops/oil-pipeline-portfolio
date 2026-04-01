@@ -1,6 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { fadeUp, staggerContainerFast, viewportOptions } from '@/lib/animations';
 import { projects } from '@/data/projects';
 
@@ -115,10 +116,8 @@ export default function Projects() {
                     Source
                   </a>
                   {project.liveUrl && (
-                    <a
+                    <Link
                       href={project.liveUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
                       className="flex items-center gap-1.5 text-xs font-medium transition-colors"
                       style={{ color: project.accentColor }}
                     >
@@ -126,7 +125,7 @@ export default function Projects() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                       </svg>
                       Live Demo
-                    </a>
+                    </Link>
                   )}
                 </div>
               </div>
