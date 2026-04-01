@@ -13,13 +13,14 @@ export type Project = {
 export const projects: Project[] = [
   {
     id: 'oil-pipeline',
-    title: 'Real-Time Oil Price Pipeline',
+    title: 'Oil Price Data Pipeline',
     description:
-      'End-to-end streaming data pipeline that ingests live oil price feeds, processes them with Apache Spark Structured Streaming, orchestrates tasks via Airflow, and lands clean data into PostgreSQL for downstream analytics.',
-    tags: ['Apache Spark', 'Kafka', 'Airflow', 'PostgreSQL', 'Python', 'Docker'],
+      '12-stage end-to-end data engineering project: PostgreSQL Star Schema warehouse, yfinance ingestor, DuckDB/Parquet medallion lakehouse, FastAPI dual-backend REST API, Docker, Kubernetes + Helm, GitHub Actions CI/CD, and Prometheus/Grafana monitoring.',
+    tags: ['PostgreSQL', 'DuckDB', 'FastAPI', 'Kubernetes', 'Prometheus', 'Python'],
     gradient: 'from-cyan-500/20 via-blue-500/10 to-indigo-500/20',
     accentColor: '#38bdf8',
-    githubUrl: '#',
+    githubUrl: 'https://github.com/Arash-devops/oil-pipeline-portfolio',
+    liveUrl: '/pipeline',
     featured: true,
   },
   {
