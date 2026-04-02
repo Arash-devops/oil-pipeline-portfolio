@@ -56,7 +56,7 @@ export const samplePriceHistory: ApiEnvelope<PriceRecord> = {
   status: 'success',
   data: (() => {
     const rows: PriceRecord[] = [];
-    const start = new Date('2024-10-01');
+    const start = new Date('2025-12-01');
     let price = 74.2;
     for (let i = 0; i < 90; i++) {
       const d = new Date(start);
@@ -83,30 +83,31 @@ export const samplePriceHistory: ApiEnvelope<PriceRecord> = {
   meta: { count: 63, source: 'sample', query_time_ms: 4 },
 };
 
-// 18 months of monthly summaries for WTI
+// 18 months of monthly summaries for WTI (Aug 2024 – Feb 2026)
 export const sampleMonthlySummary: ApiEnvelope<MonthlySummaryRecord> = {
   status: 'success',
   data: [
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2023, month: 7,  trading_days: 21, avg_close: 77.2, min_close: 71.3, max_close: 83.4, stddev_close: 3.1, total_volume: 4200000, monthly_return_pct:  3.8 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2023, month: 8,  trading_days: 23, avg_close: 81.5, min_close: 77.8, max_close: 88.2, stddev_close: 2.9, total_volume: 4800000, monthly_return_pct:  5.6 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2023, month: 9,  trading_days: 20, avg_close: 89.4, min_close: 83.1, max_close: 95.0, stddev_close: 3.4, total_volume: 5100000, monthly_return_pct:  9.7 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2023, month: 10, trading_days: 22, avg_close: 84.6, min_close: 79.2, max_close: 91.3, stddev_close: 3.8, total_volume: 4900000, monthly_return_pct: -5.3 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2023, month: 11, trading_days: 21, avg_close: 77.8, min_close: 72.4, max_close: 83.1, stddev_close: 2.7, total_volume: 4300000, monthly_return_pct: -8.0 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2023, month: 12, trading_days: 20, avg_close: 71.3, min_close: 66.8, max_close: 76.9, stddev_close: 2.5, total_volume: 3900000, monthly_return_pct: -8.4 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 1,  trading_days: 23, avg_close: 72.9, min_close: 69.5, max_close: 78.2, stddev_close: 2.1, total_volume: 4100000, monthly_return_pct:  2.2 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 2,  trading_days: 21, avg_close: 76.1, min_close: 72.3, max_close: 80.6, stddev_close: 2.3, total_volume: 4400000, monthly_return_pct:  4.4 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 3,  trading_days: 20, avg_close: 80.7, min_close: 76.5, max_close: 87.1, stddev_close: 3.1, total_volume: 4700000, monthly_return_pct:  6.0 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 4,  trading_days: 22, avg_close: 83.4, min_close: 79.8, max_close: 87.9, stddev_close: 2.4, total_volume: 4600000, monthly_return_pct:  3.3 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 5,  trading_days: 23, avg_close: 78.9, min_close: 74.2, max_close: 84.3, stddev_close: 2.9, total_volume: 4500000, monthly_return_pct: -5.4 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 6,  trading_days: 20, avg_close: 80.2, min_close: 76.7, max_close: 84.8, stddev_close: 2.2, total_volume: 4200000, monthly_return_pct:  1.6 },
-    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 7,  trading_days: 23, avg_close: 81.6, min_close: 77.1, max_close: 85.9, stddev_close: 2.6, total_volume: 4400000, monthly_return_pct:  1.7 },
     { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 8,  trading_days: 22, avg_close: 76.3, min_close: 71.7, max_close: 81.2, stddev_close: 2.8, total_volume: 4100000, monthly_return_pct: -6.5 },
     { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 9,  trading_days: 21, avg_close: 69.8, min_close: 65.4, max_close: 74.3, stddev_close: 2.5, total_volume: 3800000, monthly_return_pct: -8.5 },
     { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 10, trading_days: 23, avg_close: 71.2, min_close: 66.9, max_close: 76.5, stddev_close: 2.7, total_volume: 4000000, monthly_return_pct:  2.0 },
     { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 11, trading_days: 21, avg_close: 68.4, min_close: 63.8, max_close: 73.1, stddev_close: 2.6, total_volume: 3700000, monthly_return_pct: -3.9 },
     { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2024, month: 12, trading_days: 22, avg_close: 70.1, min_close: 66.2, max_close: 74.8, stddev_close: 2.3, total_volume: 3900000, monthly_return_pct:  2.5 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 1,  trading_days: 23, avg_close: 73.4, min_close: 69.1, max_close: 78.6, stddev_close: 2.6, total_volume: 4200000, monthly_return_pct:  4.7 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 2,  trading_days: 20, avg_close: 70.8, min_close: 66.3, max_close: 75.4, stddev_close: 2.4, total_volume: 3900000, monthly_return_pct: -3.5 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 3,  trading_days: 21, avg_close: 68.2, min_close: 63.9, max_close: 72.8, stddev_close: 2.5, total_volume: 3700000, monthly_return_pct: -3.7 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 4,  trading_days: 22, avg_close: 63.5, min_close: 58.4, max_close: 68.9, stddev_close: 3.1, total_volume: 3500000, monthly_return_pct: -6.9 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 5,  trading_days: 22, avg_close: 61.8, min_close: 57.2, max_close: 66.4, stddev_close: 2.7, total_volume: 3400000, monthly_return_pct: -2.7 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 6,  trading_days: 21, avg_close: 65.3, min_close: 61.0, max_close: 70.1, stddev_close: 2.5, total_volume: 3600000, monthly_return_pct:  5.7 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 7,  trading_days: 23, avg_close: 67.9, min_close: 63.5, max_close: 72.6, stddev_close: 2.6, total_volume: 3800000, monthly_return_pct:  4.0 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 8,  trading_days: 21, avg_close: 71.2, min_close: 66.8, max_close: 76.3, stddev_close: 2.8, total_volume: 4000000, monthly_return_pct:  4.9 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 9,  trading_days: 22, avg_close: 69.4, min_close: 64.9, max_close: 74.2, stddev_close: 2.6, total_volume: 3900000, monthly_return_pct: -2.5 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 10, trading_days: 23, avg_close: 66.7, min_close: 62.1, max_close: 71.5, stddev_close: 2.7, total_volume: 3700000, monthly_return_pct: -3.9 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 11, trading_days: 20, avg_close: 68.9, min_close: 64.3, max_close: 73.8, stddev_close: 2.5, total_volume: 3800000, monthly_return_pct:  3.3 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2025, month: 12, trading_days: 22, avg_close: 71.6, min_close: 67.2, max_close: 76.4, stddev_close: 2.7, total_volume: 4100000, monthly_return_pct:  3.9 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2026, month: 1,  trading_days: 22, avg_close: 74.3, min_close: 69.8, max_close: 79.1, stddev_close: 2.6, total_volume: 4300000, monthly_return_pct:  3.8 },
+    { commodity_id: 'CL=F', commodity_name: 'WTI Crude Oil', year: 2026, month: 2,  trading_days: 20, avg_close: 72.1, min_close: 68.0, max_close: 76.5, stddev_close: 2.3, total_volume: 4000000, monthly_return_pct: -3.0 },
   ],
-  meta: { count: 18, source: 'sample', query_time_ms: 7 },
+  meta: { count: 19, source: 'sample', query_time_ms: 7 },
 };
 
 // 90 days of WTI vs Brent spread
@@ -114,7 +115,7 @@ export const sampleComparison: ApiEnvelope<CommodityComparisonRecord> = {
   status: 'success',
   data: (() => {
     const rows: CommodityComparisonRecord[] = [];
-    const start = new Date('2024-10-01');
+    const start = new Date('2025-12-01');
     let wti = 74.5;
     let brent = 78.1;
     for (let i = 0; i < 90; i++) {

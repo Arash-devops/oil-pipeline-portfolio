@@ -52,6 +52,8 @@ const diagrams: Diagram[] = [
   },
 ];
 
+const basePath = process.env.NODE_ENV === 'production' ? '/oil-pipeline-portfolio' : '';
+
 export default function ArchitectureDiagrams() {
   const [modal, setModal] = useState<Diagram | null>(null);
 
@@ -96,7 +98,7 @@ export default function ArchitectureDiagrams() {
               {/* Diagram thumbnail */}
               <div className="relative h-44 bg-[#080c12] overflow-hidden flex items-center justify-center">
                 <Image
-                  src={`/diagrams/${diagram.key}.png`}
+                  src={`${basePath}/diagrams/${diagram.key}.png`}
                   alt={diagram.title}
                   width={600}
                   height={300}
@@ -130,7 +132,7 @@ export default function ArchitectureDiagrams() {
 
       {modal && (
         <DiagramModal
-          src={`/diagrams/${modal.key}.png`}
+          src={`${basePath}/diagrams/${modal.key}.png`}
           alt={modal.title}
           onClose={() => setModal(null)}
         />

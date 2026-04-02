@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { fadeUp, staggerContainerFast, viewportOptions } from '@/lib/animations';
+import { fadeUp, viewportOptions } from '@/lib/animations';
 
 type Tech = {
   name: string;
@@ -64,15 +64,15 @@ export default function TechStackGrid() {
           </p>
         </motion.div>
 
-        <motion.div
-          variants={staggerContainerFast}
-          initial="hidden"
-          whileInView="visible"
-          viewport={viewportOptions}
-          className="grid md:grid-cols-2 gap-8"
-        >
+        <div className="grid md:grid-cols-2 gap-8">
           {grouped.map(({ cat, items }) => (
-            <motion.div key={cat} variants={fadeUp}>
+            <motion.div
+              key={cat}
+              variants={fadeUp}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, amount: 0.1 }}
+            >
               <p
                 className="text-xs font-mono-custom font-semibold uppercase tracking-[0.2em] mb-4"
                 style={{ color: items[0]?.color }}
@@ -100,7 +100,7 @@ export default function TechStackGrid() {
               </div>
             </motion.div>
           ))}
-        </motion.div>
+        </div>
 
         {/* Bottom CTA */}
         <motion.div
