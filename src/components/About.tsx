@@ -71,37 +71,28 @@ export default function About() {
             className="space-y-5"
           >
             <p className="text-slate-300 text-lg leading-relaxed">
-              I&apos;m <span className="text-slate-100 font-semibold">Arash Razban</span>, a software
-              engineer and infrastructure specialist based in{' '}
-              <span className="text-cyan-400 font-medium">Germany</span>, actively seeking roles in
-              DevOps, Data Engineering, and Backend Development.
-            </p>
-
-            <p className="text-slate-400 leading-relaxed">
-              My academic path is a deliberate journey across disciplines. I hold an{' '}
+              I&apos;m <span className="text-slate-100 font-semibold">Arash Razban</span>, a data
+              engineering and backend development enthusiast based in{' '}
+              <span className="text-cyan-400 font-medium">Berlin, Germany</span>. I hold an{' '}
               <span className="text-indigo-400 font-medium">MSc in Data Science</span> from Ulster
-              University (UK) where I graduated with <span className="text-slate-200 font-medium">Distinction</span>,
-              an earlier <span className="text-amber-400 font-medium">MSc in Computer Hardware Engineering</span>{' '}
-              (scored 16/20), and I am currently completing an{' '}
-              <span className="text-rose-400 font-medium">MSc in Cyber Security</span> in Germany.
+              University (<span className="text-slate-200 font-medium">Distinction</span>), an{' '}
+              <span className="text-amber-400 font-medium">MSc in Computer Hardware Engineering</span>,
+              and I&apos;m currently studying{' '}
+              <span className="text-rose-400 font-medium">Cyber Security</span>.
             </p>
 
             <p className="text-slate-400 leading-relaxed">
-              This rare blend — hardware fundamentals, data science, and security — gives me a
-              cross-cutting view that most specialists lack. I build systems that are not just
-              functional, but <span className="text-slate-200">resilient, observable, and secure by design</span>.
+              I love building things end-to-end — from designing database schemas and data pipelines
+              to containerising services and setting up CI/CD. My portfolio project (a 12-stage{' '}
+              <span className="text-slate-200">Oil Price Data Pipeline</span>) is how I teach myself
+              by doing: PostgreSQL, DuckDB, FastAPI, Docker, Kubernetes, Prometheus, and more.
             </p>
 
             <p className="text-slate-400 leading-relaxed">
-              My four core pillars span cloud infrastructure & DevOps, data engineering & pipelines,
-              backend API development, and frontend tooling. I work comfortably across the entire
-              delivery chain — from Terraform modules provisioning cloud resources to FastAPI services
-              serving ML models, to React dashboards surfacing insights.
-            </p>
-
-            <p className="text-slate-400 leading-relaxed">
-              I&apos;m open to full-time opportunities across Europe, with a preference for roles that
-              combine infrastructure thinking with data engineering complexity.
+              I&apos;m actively looking for{' '}
+              <span className="text-slate-200">internships, working student positions, or junior roles</span>{' '}
+              in data engineering, backend development, or DevOps. I&apos;m eager to learn from
+              experienced teams, contribute meaningfully, and keep growing as an engineer.
             </p>
 
             {/* Location / availability badge */}
@@ -111,7 +102,7 @@ export default function About() {
                 Open to opportunities
               </span>
               <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-slate-300">
-                📍 Germany
+                📍 Berlin, Germany
               </span>
               <span className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-slate-300">
                 🌐 Remote / On-site

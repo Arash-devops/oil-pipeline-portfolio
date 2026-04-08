@@ -6,7 +6,7 @@ import { fadeUp, staggerContainerFast, viewportOptions } from '@/lib/animations'
 type Cert = {
   title: string;
   issuer: string;
-  status: 'Planned' | 'In Progress' | 'Earned';
+  date: string;
   icon: string;
   color: string;
   bg: string;
@@ -15,49 +15,40 @@ type Cert = {
 
 const certifications: Cert[] = [
   {
-    title: 'AWS Solutions Architect',
-    issuer: 'Amazon Web Services',
-    status: 'Planned',
-    icon: '☁️',
-    color: '#fbbf24',
-    bg: 'bg-amber-400/5',
-    border: 'border-amber-400/15',
+    title: 'CompTIA Network+',
+    issuer: 'CompTIA',
+    date: 'October 2024',
+    icon: '🌐',
+    color: '#fb7185',
+    bg: 'bg-rose-400/5',
+    border: 'border-rose-400/15',
   },
   {
-    title: 'Azure Data Engineer Associate',
+    title: 'Azure Data Fundamentals — DP-900',
     issuer: 'Microsoft',
-    status: 'Planned',
+    date: 'June 2023',
     icon: '📊',
     color: '#818cf8',
     bg: 'bg-indigo-400/5',
     border: 'border-indigo-400/15',
   },
   {
-    title: 'Certified Kubernetes Administrator',
-    issuer: 'CNCF / Linux Foundation',
-    status: 'Planned',
-    icon: '⎈',
+    title: 'Microsoft 365 Fundamentals — MS-900',
+    issuer: 'Microsoft',
+    date: 'May 2023',
+    icon: '☁️',
     color: '#38bdf8',
     bg: 'bg-cyan-400/5',
     border: 'border-cyan-400/15',
   },
   {
-    title: 'HashiCorp Terraform Associate',
-    issuer: 'HashiCorp',
-    status: 'Planned',
-    icon: '🏗️',
+    title: 'Azure Fundamentals — AZ-900',
+    issuer: 'Microsoft',
+    date: 'November 2023',
+    icon: '🏅',
     color: '#34d399',
     bg: 'bg-green-400/5',
     border: 'border-green-400/15',
-  },
-  {
-    title: 'CompTIA Security+',
-    issuer: 'CompTIA',
-    status: 'Planned',
-    icon: '🔒',
-    color: '#fb7185',
-    bg: 'bg-rose-400/5',
-    border: 'border-rose-400/15',
   },
 ];
 
@@ -79,11 +70,10 @@ export default function Certifications() {
             05 / Certifications
           </p>
           <h2 className="font-display text-4xl lg:text-5xl font-bold text-slate-100 mb-4">
-            Certification Roadmap
+            Certifications
           </h2>
           <p className="text-slate-400 max-w-xl mx-auto leading-relaxed">
-            Planned certifications to formalise and validate expertise across cloud,
-            infrastructure, and security domains.
+            Industry certifications validating expertise across networking, cloud, and data fundamentals.
           </p>
         </motion.div>
 
@@ -93,7 +83,7 @@ export default function Certifications() {
           initial="hidden"
           whileInView="visible"
           viewport={viewportOptions}
-          className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-4xl mx-auto"
+          className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 max-w-5xl mx-auto"
         >
           {certifications.map((cert) => (
             <motion.div
@@ -102,7 +92,6 @@ export default function Certifications() {
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
               className={`group relative p-6 rounded-2xl ${cert.bg} border ${cert.border} hover:border-opacity-40 transition-all duration-300`}
             >
-              {/* Status badge */}
               <div className="flex items-center justify-between mb-5">
                 <div
                   className="w-12 h-12 rounded-xl flex items-center justify-center text-2xl"
@@ -118,29 +107,18 @@ export default function Certifications() {
                     backgroundColor: `${cert.color}10`,
                   }}
                 >
-                  {cert.status}
+                  Earned
                 </span>
               </div>
 
               <h3 className="font-display text-base font-semibold text-slate-100 mb-1.5 leading-snug">
                 {cert.title}
               </h3>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-slate-500 mb-3">
                 {cert.issuer}
               </p>
-
-              {/* Progress bar (empty for Planned) */}
-              <div className="mt-4 h-1 bg-white/5 rounded-full overflow-hidden">
-                <div
-                  className="h-full rounded-full opacity-40"
-                  style={{
-                    width: cert.status === 'Earned' ? '100%' : cert.status === 'In Progress' ? '50%' : '0%',
-                    backgroundColor: cert.color,
-                  }}
-                />
-              </div>
-              <p className="mt-1.5 text-xs text-slate-600 font-mono-custom">
-                {cert.status === 'Planned' ? 'Not started' : cert.status === 'In Progress' ? '~50% ready' : 'Complete'}
+              <p className="text-xs font-mono-custom" style={{ color: cert.color }}>
+                {cert.date}
               </p>
             </motion.div>
           ))}
