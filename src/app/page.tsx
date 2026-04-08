@@ -8,7 +8,6 @@ import TechMarquee from '@/components/TechMarquee';
 import Education from '@/components/Education';
 import Projects from '@/components/Projects';
 import Certifications from '@/components/Certifications';
-import GeneralQuestions from '@/components/GeneralQuestions';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 
@@ -23,7 +22,6 @@ export default function Home() {
       <Education />
       <Projects />
       <Certifications />
-      <GeneralQuestions />
       <Contact />
       <Footer />
     </main>

@@ -142,7 +142,7 @@ export default function Projects() {
           className="text-center mt-12"
         >
           <a
-            href="https://github.com/arashrazban"
+            href="https://github.com/Arash-devops"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 px-6 py-3 text-sm font-medium text-slate-300 border border-white/10 rounded-xl hover:bg-white/5 hover:border-white/20 transition-all duration-200"

@@ -19,7 +19,7 @@ const contactChannels = [
   },
   {
     label: 'LinkedIn',
-    value: 'linkedin.com/in/arashrazban',
+    value: 'linkedin.com/in/arash-razban',
     href: siteConfig.social.linkedin,
     icon: (
       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
@@ -30,7 +30,7 @@ const contactChannels = [
   },
   {
     label: 'GitHub',
-    value: 'github.com/arashrazban',
+    value: 'github.com/Arash-devops',
     href: siteConfig.social.github,
     icon: (
       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
