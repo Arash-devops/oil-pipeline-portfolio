@@ -1,0 +1,126 @@
+.header {
+  --nav-bg: #f8f7f3;
+  --nav-ink: #172d35;
+  --nav-line: #dcded8;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--nav-bg);
+  color: var(--nav-ink);
+  border-bottom: 1px solid var(--nav-line);
+}
+.dark {
+  --nav-bg: #0a0e17;
+  --nav-ink: #e2e8f0;
+  --nav-line: #263441;
+}
+.nav {
+  max-width: 1200px;
+  margin: auto;
+  padding: 0 40px;
+  min-height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+.brand {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.7px;
+  white-space: nowrap;
+}
+.brand span {
+  color: #24766b;
+}
+.links {
+  display: flex;
+  gap: 30px;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 500;
+}
+.links a {
+  padding: 12px 0;
+}
+.links a:hover {
+  text-decoration: underline;
+  text-underline-offset: 6px;
+}
+.links .contact {
+  margin-left: 12px;
+  border: 1px solid var(--nav-ink);
+  padding: 11px 17px;
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
+.contact:hover {
+  background: #24766b;
+  color: #fff;
+  border-color: #24766b;
+}
+.toggle {
+  display: none;
+}
+.skip {
+  position: absolute;
+  left: 20px;
+  top: -80px;
+  background: #fff;
+  color: #172d35;
+  padding: 12px;
+  z-index: 60;
+}
+.skip:focus {
+  top: 8px;
+}
+.header :focus-visible {
+  outline: 2px solid #24766b;
+  outline-offset: 5px;
+}
+@media (max-width: 760px) {
+  .nav {
+    padding: 0 24px;
+    min-height: 72px;
+  }
+  .toggle {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 12px 0;
+    background: none;
+    border: 0;
+    color: inherit;
+    font-size: 14px;
+  }
+  .toggle span {
+    font-size: 22px;
+  }
+  .links {
+    display: none;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--nav-bg);
+    padding: 16px 24px 24px;
+    border-bottom: 1px solid var(--nav-line);
+    flex-direction: column;
+    align-items: stretch;
+    gap: 4px;
+  }
+  .links.open {
+    display: flex;
+  }
+  .links a {
+    padding: 12px 0;
+  }
+  .links .contact {
+    margin: 12px 0 0;
+    justify-content: space-between;
+  }
+  .brand {
+    font-size: 19px;
+  }
+}

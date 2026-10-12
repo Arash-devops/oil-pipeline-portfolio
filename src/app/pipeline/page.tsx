@@ -11,7 +11,7 @@ import TechStackGrid from '@/components/pipeline/TechStackGrid';
 
 export default function PipelinePage() {
   return (
-    <main className="relative">
+    <main id="main-content" className="relative">
       <Navbar />
       <PipelineHero />
       <ArchitectureDiagrams />
